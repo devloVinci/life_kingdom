@@ -1,19 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'app/providers.dart';
+import 'app/router.dart';
+import 'core/data/game_repository.dart';
 import 'core/theme/app_theme.dart';
-import 'features/kingdom/kingdom_home_screen.dart';
 
-void main() => runApp(const LifeKingdomApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final repo = SharedPrefsGameRepository();
+  final state = await repo.load();
+  runApp(ProviderScope(
+    overrides: [
+      gameRepositoryProvider.overrideWithValue(repo),
+      initialGameStateProvider.overrideWithValue(state),
+    ],
+    child: const LifeKingdomApp(),
+  ));
+}
 
-class LifeKingdomApp extends StatelessWidget {
+final _routerProvider = Provider((ref) => buildRouter());
+
+class LifeKingdomApp extends ConsumerWidget {
   const LifeKingdomApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MaterialApp.router(
       title: 'Life Kingdom',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      home: const KingdomHomeScreen(),
+      routerConfig: ref.watch(_routerProvider),
     );
   }
 }
