@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../core/game/catalog.dart';
@@ -146,7 +147,27 @@ class _Preview extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (item.type) {
       case ItemType.character:
-        return CharacterAvatar(item: item);
+        // tap to open the hero previewer
+        return GestureDetector(
+          key: Key('preview_${item.id}'),
+          onTap: () => context.push('/hero/${item.id}'),
+          child: Stack(clipBehavior: Clip.none, children: [
+            CharacterAvatar(item: item),
+            Positioned(
+              right: -6,
+              bottom: -6,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: AppColors.panelDeep,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.outline, width: 2),
+                ),
+                child: const Icon(Icons.visibility, size: 14, color: Colors.white),
+              ),
+            ),
+          ]),
+        );
       case ItemType.title:
         return Container(
           width: 64,

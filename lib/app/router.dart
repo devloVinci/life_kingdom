@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/buildings/building_detail_screen.dart';
 import '../features/buildings/buildings_screen.dart';
 import '../features/character_lab/character_lab_screen.dart';
+import '../features/hero_preview/hero_preview_screen.dart';
 import '../features/habits/habit_form_screen.dart';
 import '../features/habits/habits_screen.dart';
 import '../features/kingdom/kingdom_home_screen.dart';
@@ -49,6 +50,12 @@ GoRouter buildRouter() {
         path: '/character-lab',
         parentNavigatorKey: rootKey,
         builder: (_, __) => const CharacterLabScreen(),
+      ),
+      GoRoute(
+        path: '/hero/:id',
+        parentNavigatorKey: rootKey,
+        builder: (_, state) =>
+            HeroPreviewScreen(itemId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/settings',

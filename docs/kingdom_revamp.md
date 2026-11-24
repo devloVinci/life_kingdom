@@ -55,3 +55,10 @@ frame animation → asset in `assets/heroes/<slug>/` → hook into catalog + sho
   sprite heroes; Character Lab shows both heroes as a preview.
 - Catalog: `char_juggernaut` (epic, 1500 gold / 30 gems), `char_dragon_hayyab` (legendary, 150 gems).
 - Preview render: `docs/characters/village_preview.gif`.
+
+### Hero previewer
+- Route `/hero/:id` (`lib/features/hero_preview/hero_preview_screen.dart`).
+- Opened from the shop (tap a hero portrait, eye badge) and from Character Lab.
+- Arena stage with Attack / Loop attack, every frame selectable, zoom and flip;
+  "In village" stage; small-size readability check; buy / equip.
+- Older SVG-rig characters get the same screen with their rig animations.

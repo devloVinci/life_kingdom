@@ -140,6 +140,7 @@ class SpriteHero extends StatefulWidget {
     this.autoEvery,
     this.flip = false,
     this.tapToAttack = true,
+    this.hold,
     this.onFrames,
   });
 
@@ -149,6 +150,9 @@ class SpriteHero extends StatefulWidget {
   final Duration? autoEvery;
   final bool flip;
   final bool tapToAttack;
+
+  /// Show this frame instead of the idle frame (previewer). Attacks still play.
+  final String? hold;
 
   /// Called once the frame metadata is known (for scene placement).
   final ValueChanged<SpriteFrames>? onFrames;
@@ -252,17 +256,18 @@ class _SpriteHeroState extends State<SpriteHero>
     if (f == null) return SizedBox(height: widget.height, width: widget.height * 0.8);
     final w = widget.height * f.aspect;
     final anchor = Alignment(f.anchor.dx * 2 - 1, f.anchor.dy * 2 - 1);
-    final frame = _frame ?? widget.def.idle;
+    final frame = _frame ?? widget.hold ?? widget.def.idle;
+    final breathing = widget.hold == null || widget.hold == widget.def.idle;
     final child = AnimatedBuilder(
       animation: _breath,
       builder: (context, img) {
         var sx = 1.0, sy = 1.0, dx = 0.0;
-        if (_step == null) {
+        if (_step == null && breathing) {
           // idle: slow breathing, slight squash at the feet
           final t = math.sin(_breath.value * 2 * math.pi);
           sy = 1 + 0.018 * t;
           sx = 1 - 0.008 * t;
-        } else {
+        } else if (_step != null) {
           // impact: punch scale that settles over ~250 ms
           final ms = DateTime.now().difference(_stepStart).inMilliseconds;
           final k = math.exp(-ms / 120.0);

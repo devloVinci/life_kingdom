@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/characters/skinned/skinned_character.dart';
 import '../../core/theme/app_colors.dart';
@@ -80,6 +81,17 @@ class _CharacterLabScreenState extends State<CharacterLabScreen> {
             owned: {'char_juggernaut', 'char_dragon_hayyab'},
             height: 320,
           ),
+          const SizedBox(height: 10),
+          Wrap(spacing: 10, runSpacing: 10, alignment: WrapAlignment.center, children: [
+            for (final id in const ['char_juggernaut', 'char_dragon_hayyab'])
+              GameButton(
+                label: 'Preview ${id == 'char_juggernaut' ? 'Dhul-Qurayn' : 'Hayyab'}',
+                icon: Icons.visibility,
+                compact: true,
+                style: GameButtonStyle.blue,
+                onPressed: () => context.push('/hero/$id'),
+              ),
+          ]),
           const SizedBox(height: 24),
           // 1. stage with every clip
           Container(
