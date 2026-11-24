@@ -76,52 +76,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _import() async {
-    final controller = TextEditingController();
-    String? error;
-    await showDialog<void>(
+    final restored = await showDialog<GameState>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Restore backup'),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('Paste your backup. This replaces ALL current data.'),
-            TextField(
-              key: const Key('import_field'),
-              controller: controller,
-              maxLines: 6,
-            ),
-            if (error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(error!, style: const TextStyle(color: Colors.red)),
-              ),
-          ]),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
-            TextButton(
-              onPressed: () {
-                try {
-                  final decoded = jsonDecode(controller.text);
-                  if (decoded is! Map<String, dynamic>) {
-                    throw const FormatException('Not a backup file');
-                  }
-                  final restored = GameState.fromJson(decoded);
-                  ref.read(gameProvider.notifier).replaceState(restored);
-                  Navigator.pop(ctx);
-                  _toast('Backup restored');
-                } on FormatException catch (e) {
-                  setLocal(() => error = e.message);
-                }
-              },
-              child: const Text('Restore'),
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => const _ImportDialog(),
     );
-    controller.dispose();
+    if (restored != null && mounted) {
+      ref.read(gameProvider.notifier).replaceState(restored);
+      _toast('Backup restored');
+    }
   }
 
   Future<void> _reset() async {
@@ -240,6 +202,64 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Owns its TextEditingController so it is disposed only after the dialog
+/// has fully left the tree.
+class _ImportDialog extends StatefulWidget {
+  const _ImportDialog();
+
+  @override
+  State<_ImportDialog> createState() => _ImportDialogState();
+}
+
+class _ImportDialogState extends State<_ImportDialog> {
+  final _controller = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _restore() {
+    try {
+      final decoded = jsonDecode(_controller.text);
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('Not a backup file');
+      }
+      Navigator.pop(context, GameState.fromJson(decoded));
+    } on FormatException catch (e) {
+      setState(() => _error = e.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Restore backup'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Text('Paste your backup. This replaces ALL current data.'),
+        TextField(
+          key: const Key('import_field'),
+          controller: _controller,
+          maxLines: 6,
+        ),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(_error!, style: const TextStyle(color: Colors.red)),
+          ),
+      ]),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
+        TextButton(onPressed: _restore, child: const Text('Restore')),
+      ],
     );
   }
 }
