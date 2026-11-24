@@ -224,6 +224,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 16),
             Center(
               child: GameButton(
+                key: const Key('open_character_lab'),
+                label: 'Character Lab (preview)',
+                icon: Icons.person,
+                style: GameButtonStyle.gold,
+                onPressed: () => context.push('/character-lab'),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: GameButton(
                 label: 'Reset progress',
                 style: GameButtonStyle.danger,
                 onPressed: _reset,

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/buildings/building_detail_screen.dart';
 import '../features/buildings/buildings_screen.dart';
+import '../features/character_lab/character_lab_screen.dart';
 import '../features/habits/habit_form_screen.dart';
 import '../features/habits/habits_screen.dart';
 import '../features/kingdom/kingdom_home_screen.dart';
@@ -43,6 +44,11 @@ GoRouter buildRouter() {
         path: '/calendar',
         parentNavigatorKey: rootKey,
         builder: (_, __) => const CalendarStatsScreen(),
+      ),
+      GoRoute(
+        path: '/character-lab',
+        parentNavigatorKey: rootKey,
+        builder: (_, __) => const CharacterLabScreen(),
       ),
       GoRoute(
         path: '/settings',
