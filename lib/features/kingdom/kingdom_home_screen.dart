@@ -9,6 +9,7 @@ import '../../core/game/game_engine.dart';
 import '../../core/game/xp_curve.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
+import '../../core/characters/rig_poses.dart';
 import '../../core/widgets/character_avatar.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_button.dart';
@@ -192,7 +193,7 @@ Future<void> _openChest(BuildContext context, WidgetRef ref, String type) async 
           if (r.gems > 0) Text('+${r.gems} gems', style: AppText.body(18)),
           if (item != null) ...[
             const SizedBox(height: 12),
-            CharacterAvatar(item: item),
+            CharacterAvatar(item: item, size: 84, anim: RigAnim.celebrate, animate: true),
             const SizedBox(height: 6),
             Text(
                 r.duplicate
@@ -219,7 +220,7 @@ class _HeroPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return GamePanel(
       child: Row(children: [
-        CharacterAvatar(item: character),
+        CharacterAvatar(item: character, size: 84, animate: true),
         const SizedBox(width: 12),
         Expanded(
           child: Column(

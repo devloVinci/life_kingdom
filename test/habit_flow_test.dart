@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:life_kingdom/core/widgets/character_rig.dart';
 import 'package:life_kingdom/app/providers.dart';
 import 'package:life_kingdom/core/data/game_repository.dart';
 import 'package:life_kingdom/core/game/models.dart';
@@ -8,7 +9,10 @@ import 'package:life_kingdom/core/theme/app_text.dart';
 import 'package:life_kingdom/main.dart';
 
 void main() {
-  setUpAll(() => AppText.useGoogleFonts = false);
+  setUpAll(() {
+    AppText.useGoogleFonts = false;
+    CharacterRig.enableAnimation = false;
+  });
 
   testWidgets('create a habit, complete it, see level up', (tester) async {
     // Test fallback font (Ahem) is very wide, so use a roomy surface.
