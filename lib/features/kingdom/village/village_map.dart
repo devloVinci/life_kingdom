@@ -346,10 +346,46 @@ class _VillageMapState extends ConsumerState<VillageMap>
           Positioned.fill(
               child: CustomPaint(painter: _MarginPainter(rect, k))),
           Center(child: FittedBox(fit: BoxFit.contain, child: stage)),
+          // Cloud shadows cross the whole screen, not just the stage.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _t,
+                builder: (_, __) =>
+                    CustomPaint(painter: _CloudPainter(_t.value, k)),
+              ),
+            ),
+          ),
         ]),
       );
     });
   }
+}
+
+class _CloudPainter extends CustomPainter {
+  _CloudPainter(this.v, this.k);
+  final double v;
+  final double k;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()..color = const Color(0x1A000000);
+    final span = size.width + 300 * k;
+    for (var i = 0; i < 3; i++) {
+      final f = (v * (1 + i) + i * .33) % 1;
+      final x = -150 * k + f * span;
+      final y = size.height * (0.26 + i * 0.24);
+      canvas.drawOval(
+          Rect.fromCenter(center: Offset(x, y), width: 110 * k, height: 34 * k), p);
+      canvas.drawOval(
+          Rect.fromCenter(
+              center: Offset(x + 30 * k, y - 8 * k), width: 70 * k, height: 30 * k),
+          p);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CloudPainter old) => old.v != v || old.k != k;
 }
 
 /// Meadow, flowers and trees outside the main stage.
@@ -587,17 +623,6 @@ class _AmbientPainter extends CustomPainter {
       final tw = (math.sin(a * 6 + i * 1.3) + 1) / 2;
       canvas.drawCircle(Offset(x, y), 3.2 * tw + 1,
           Paint()..color = const Color(0xFFFFF3A8).withOpacity(.25 + .6 * tw));
-    }
-
-    // Clouds drifting across (soft shadows on the grass).
-    for (var i = 0; i < 3; i++) {
-      final k = (v * (1 + i) + i * .33) % 1;
-      final x = -120 + k * 640;
-      final y = 220 + i * 200.0;
-      final p = Paint()..color = const Color(0x1A000000);
-      canvas.drawOval(Rect.fromCenter(center: Offset(x, y), width: 110, height: 34), p);
-      canvas.drawOval(
-          Rect.fromCenter(center: Offset(x + 30, y - 8), width: 70, height: 30), p);
     }
   }
 
