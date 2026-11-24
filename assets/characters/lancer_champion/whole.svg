@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="124" height="159" viewBox="0 0 124 159" fill="none">
+<rect x="41.5" y="113" width="20" height="35" rx="7.5" fill="#A0ACC4" stroke-width="3" stroke-linejoin="round" stroke="#14213D" />
+<rect x="64.5" y="113" width="20" height="35" rx="7.5" fill="#A0ACC4" stroke-width="3" stroke-linejoin="round" stroke="#14213D" />
+<rect x="35.5" y="65" width="55" height="53" rx="15.5" fill="#3E66CC" stroke-width="3" stroke-linejoin="round" stroke="#14213D" />
+<circle cx="63" cy="84.5" r="9.5" fill="#FFC82E" stroke-width="3" stroke-linejoin="round" stroke="#14213D" />
+<path d="M37 108.5H89L95 126.5H31L37 108.5Z" stroke-width="6" stroke-linejoin="round" stroke="#14213D" />
+<path d="M37 108.5H89L95 126.5H31L37 108.5Z" fill="#2C50AA" />
+<rect x="19.5" y="73" width="19" height="35" rx="8.5" fill="#A0ACC4" stroke-width="3" stroke-linejoin="round" stroke="#14213D" />
+<circle cx="22" cy="93.5" r="20.5" fill="#FFC82E" stroke-width="3" stroke-linejoin="round" stroke="#14213D" />
+<circle cx="22" cy="93.5" r="10.5" fill="#3E66CC" stroke-width="3" stroke-linejoin="round" stroke="#14213D" />
+<ellipse cx="63" cy="47.5" rx="20" ry="19" stroke-width="6" stroke-linejoin="round" stroke="#14213D" />
+<ellipse cx="63" cy="47.5" rx="20" ry="19" fill="#BEC6DA" />
+<rect x="47.5" y="43" width="31" height="10" rx="4.5" fill="#18223E" stroke-width="3" stroke-linejoin="round" stroke="#14213D" />
+<circle cx="57" cy="47.5" r="2" fill="#78F0FF" />
+<circle cx="69" cy="47.5" r="2" fill="#78F0FF" />
+<path d="M63 28.4999C49.6667 12.4999 36.3333 10.4999 23 22.4999C36.3333 23.8333 48.3333 29.8333 59 40.4999L63 28.4999Z" stroke-width="6" stroke-linejoin="round" stroke="#14213D" />
+<path d="M63 28.4999C49.6667 12.4999 36.3333 10.4999 23 22.4999C36.3333 23.8333 48.3333 29.8333 59 40.4999L63 28.4999Z" fill="#D63C34" />
+<rect x="87.5" y="73" width="19" height="35" rx="8.5" fill="#A0ACC4" stroke-width="3" stroke-linejoin="round" stroke="#14213D" />
+<circle cx="104" cy="107.5" r="10.5" fill="#BEC6DA" stroke-width="3" stroke-linejoin="round" stroke="#14213D" />
+<rect x="101.5" y="13" width="8" height="131" rx="3.5" fill="#784C28" stroke-width="3" stroke-linejoin="round" stroke="#14213D" />
+<path d="M105 2.5L115 26.5H95L105 2.5Z" stroke-width="5" stroke-linejoin="round" stroke="#14213D" />
+<path d="M105 2.5L115 26.5H95L105 2.5Z" fill="#CDD2E0" />
+</svg>

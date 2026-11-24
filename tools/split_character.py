@@ -19,6 +19,7 @@ import xml.etree.ElementTree as ET
 
 SVG_NS = "http://www.w3.org/2000/svg"
 ET.register_namespace("", SVG_NS)
+ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 
 
 def tag(el):
@@ -145,7 +146,7 @@ def flatten_masks(parent):
         if "mask" in ch.attrib:
             del ch.attrib["mask"]
             # insert before the last shape (the fill it belongs to)
-            if new and tag(new[-1]) in ("rect", "circle", "ellipse", "path"):
+            if new and tag(new[-1]) in ("rect", "circle", "ellipse", "path", "use"):
                 new.insert(len(new) - 1, ch)
             else:
                 new.append(ch)
@@ -154,11 +155,60 @@ def flatten_masks(parent):
     parent[:] = new
 
 
+def whole_character(root, a, slug_hint=None):
+    """Fallback for flat exports: ground shadow + one whole-body layer."""
+    base = os.path.splitext(os.path.basename(a.svg))[0]
+    name = re.sub(r"^Char[_ ]+", "", base)
+    slug = slug_hint or slugify(name)
+    width = float(re.sub(r"[^0-9.]", "", root.get("width", "120")))
+    height = float(re.sub(r"[^0-9.]", "", root.get("height", "140")))
+    out_dir = os.path.join(a.out, slug)
+    os.makedirs(out_dir, exist_ok=True)
+    for old in os.listdir(out_dir):
+        if old.endswith(".svg") or old == "rig.json":
+            os.remove(os.path.join(out_dir, old))
+    body = copy.deepcopy(root)
+    flatten_masks(body)
+    shadow = None
+    for k in list(body):
+        if tag(k) in ("defs", "title", "desc"):
+            continue
+        if (tag(k) == "ellipse" and "1A331A" in k.get("fill", "").upper()):
+            shadow = k
+            body.remove(k)
+        break
+    def write(el_root, fname):
+        ET.ElementTree(el_root).write(os.path.join(out_dir, fname),
+                                      encoding="utf-8", xml_declaration=False)
+    write(body, "whole.svg")
+    parts, pivots = [], {}
+    cy = height - 8
+    if shadow is not None:
+        sh = ET.Element(f"{{{SVG_NS}}}svg", dict(root.attrib))
+        sh.append(shadow)
+        write(sh, "ground_shadow.svg")
+        parts.append({"name": "Ground Shadow", "file": "ground_shadow.svg",
+                      "role": "shadow", "bbox": bbox_of(shadow)})
+        cy = float(shadow.get("cy", cy))
+        pivots["shadow"] = [float(shadow.get("cx", width / 2)), cy]
+    parts.append({"name": "Whole", "file": "whole.svg", "role": "whole",
+                  "bbox": [0, 0, width, height]})
+    pivots["whole"] = [width / 2, cy - 4]
+    pivots["root"] = pivots["whole"]
+    rig = {"name": name, "slug": slug, "mode": "whole", "width": width,
+           "height": height, "parts": parts, "pivots": pivots}
+    with open(os.path.join(out_dir, "rig.json"), "w") as fh:
+        json.dump(rig, fh, indent=1)
+    print(f"{name}: whole-body rig -> {out_dir}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("svg")
     ap.add_argument("--slug")
     ap.add_argument("--out", default="assets/characters")
+    ap.add_argument("--parts", action="store_true",
+                    help="force part splitting even if no layer ids exist")
     a = ap.parse_args()
 
     root = ET.parse(a.svg).getroot()
@@ -170,6 +220,11 @@ def main():
     parts_src = [k for k in comp if tag(k) not in ("defs", "title", "desc")]
     if not parts_src:
         sys.exit("No parts found in SVG")
+    # Figma drops layer names unless "Include id attribute" was on (or the
+    # layers were not grouped): then there is nothing to split by.
+    named = [k for k in parts_src if tag(k) != "mask" and k.get("id")]
+    if not named and not a.parts:
+        return whole_character(root, a, slug_hint=a.slug)
 
     width = float(re.sub(r"[^0-9.]", "", root.get("width", "120")))
     height = float(re.sub(r"[^0-9.]", "", root.get("height", "140")))

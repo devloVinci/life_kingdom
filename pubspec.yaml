@@ -23,4 +23,18 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/characters/archer/
+    - assets/characters/boar_rider/
+    - assets/characters/brute/
     - assets/characters/builder/
+    - assets/characters/crimson_maiden/
+    - assets/characters/drake/
+    - assets/characters/gremlin/
+    - assets/characters/huntress_queen/
+    - assets/characters/iron_colossus/
+    - assets/characters/lancer_champion/
+    - assets/characters/oracle/
+    - assets/characters/raider/
+    - assets/characters/seraph/
+    - assets/characters/sorcerer/
+    - assets/characters/warlord/

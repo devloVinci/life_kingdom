@@ -98,5 +98,29 @@ Map<String, PartPose> rawPose(RigAnim a, double t) {
 PartPose resolvePose(RigAnim a, double t, String role) {
   final raw = rawPose(a, t);
   if (role == 'shadow') return raw['shadow'] ?? PartPose.zero;
+  if (role == 'whole') return wholePose(a, t);
   return (raw[role] ?? PartPose.zero) + (raw['root'] ?? PartPose.zero);
+}
+
+/// Motion for characters exported as one flat layer (no separate limbs):
+/// squash & stretch, bobbing and tilting the entire body.
+PartPose wholePose(RigAnim a, double t) {
+  final s = math.sin(2 * math.pi * t);
+  final c = math.cos(2 * math.pi * t);
+  switch (a) {
+    case RigAnim.idle:
+      return PartPose(sy: 1 + 0.025 * s, sx: 1 - 0.012 * s);
+    case RigAnim.walk:
+      return PartPose(dy: -3 * s.abs(), rot: 0.06 * s);
+    case RigAnim.work:
+      final hit = math.pow((1 - c) / 2, 3).toDouble();
+      return PartPose(dy: 2 * hit, rot: -0.05 + 0.15 * hit, sy: 1 - 0.05 * hit);
+    case RigAnim.celebrate:
+      return PartPose(dy: -8 * s.abs(), rot: 0.1 * s, sy: 1 + 0.04 * c.abs());
+    case RigAnim.jump:
+      final h = math.sin(math.pi * t);
+      return PartPose(dy: -16 * h, sy: 1 + 0.08 * h, sx: 1 - 0.04 * h);
+    case RigAnim.sleep:
+      return PartPose(rot: 0.1, sy: 1 + 0.03 * s);
+  }
 }

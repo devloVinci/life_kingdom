@@ -1,0 +1,45 @@
+{
+ "name": "Raider",
+ "slug": "raider",
+ "mode": "whole",
+ "width": 121.0,
+ "height": 151.0,
+ "parts": [
+  {
+   "name": "Ground Shadow",
+   "file": "ground_shadow.svg",
+   "role": "shadow",
+   "bbox": [
+    18.0,
+    136.5,
+    84.0,
+    12.0
+   ]
+  },
+  {
+   "name": "Whole",
+   "file": "whole.svg",
+   "role": "whole",
+   "bbox": [
+    0,
+    0,
+    121.0,
+    151.0
+   ]
+  }
+ ],
+ "pivots": {
+  "shadow": [
+   60.0,
+   142.5
+  ],
+  "whole": [
+   60.5,
+   138.5
+  ],
+  "root": [
+   60.5,
+   138.5
+  ]
+ }
+}

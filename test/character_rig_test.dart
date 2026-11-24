@@ -27,9 +27,26 @@ void main() {
       }
     });
 
+    test('every rigged character has complete assets', () {
+      for (final slug in riggedCharacterSlugs) {
+        final dir = Directory('assets/characters/$slug');
+        final rig = RigData.fromJson(
+            jsonDecode(File('${dir.path}/rig.json').readAsStringSync())
+                as Map<String, dynamic>);
+        expect(rig.parts, isNotEmpty, reason: slug);
+        for (final p in rig.parts) {
+          expect(File('${dir.path}/${p.file}').existsSync(), isTrue,
+              reason: '$slug/${p.file}');
+          expect(rig.pivots.containsKey(p.role), isTrue, reason: '$slug ${p.role}');
+        }
+      }
+    });
+
     test('rigSlugForItemId', () {
       expect(rigSlugForItemId('char_builder'), 'builder');
-      expect(rigSlugForItemId('char_raider'), isNull);
+      expect(rigSlugForItemId('char_raider'), 'raider');
+      expect(rigSlugForItemId('char_boar_rider'), 'boar_rider');
+      expect(rigSlugForItemId('char_nobody'), isNull);
       expect(rigSlugForItemId('bg_forest'), isNull);
     });
   });

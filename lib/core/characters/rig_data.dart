@@ -74,7 +74,23 @@ class RigData {
 
 /// Characters that already have exported SVG art in assets/characters/<slug>/.
 /// Add the slug here (and the folder to pubspec.yaml) when a new one is added.
-const riggedCharacterSlugs = {'builder'};
+const riggedCharacterSlugs = {
+  'archer',
+  'boar_rider',
+  'brute',
+  'builder',
+  'crimson_maiden',
+  'drake',
+  'gremlin',
+  'huntress_queen',
+  'iron_colossus',
+  'lancer_champion',
+  'oracle',
+  'raider',
+  'seraph',
+  'sorcerer',
+  'warlord',
+};
 
 /// `char_builder` -> `builder`; null if the character has no art yet.
 String? rigSlugForItemId(String itemId) {
