@@ -10,8 +10,8 @@ smooth interpolation, so motion is continuous at any frame rate.
       renders every clip to a GIF + a bind-pose PNG (same math as the app)
 
 rig.json
-  bones:  [{name, parent, x, y, z?}]       x,y = joint position in parent space
-  pieces: [{file, bone, px, py, z}]          px,py = bone joint inside the image
+  bones:  [{name, parent, x, y, r?}]       x,y = joint in parent space, r = bind rotation
+  pieces: [{file, bone, px, py, z, s?}]      px,py = bone joint inside the image, s = scale
   clips:  {name: {dur, loop, keys: {bone: {rot|x|y|sx|sy: [[t, v, ease?], ...]}},
                   fx?: [{type, t0, t1, ...}]}}
 """
@@ -68,7 +68,7 @@ def pose(rig, clip, t):
         def g(ch, d):
             v = sample(k.get(ch), t, loop, dur)
             return d if v is None else v
-        rot = math.radians(g("rot", 0))
+        rot = math.radians(b.get("r", 0) + g("rot", 0))
         tx, ty = b["x"] + g("x", 0), b["y"] + g("y", 0)
         sx, sy = g("sx", 1), g("sy", 1)
         c, s = math.cos(rot), math.sin(rot)
@@ -85,7 +85,8 @@ def render(rig, images, clip, t, size, origin, scale):
     view = np.array([[scale, 0, origin[0]], [0, scale, origin[1]], [0, 0, 1]])
     for p in sorted(rig["pieces"], key=lambda p: p["z"]):
         img = images[p["file"]]
-        m = view @ mats[p["bone"]] @ np.array([[1, 0, -p["px"]], [0, 1, -p["py"]], [0, 0, 1]])
+        ps = p.get("s", 1.0)
+        m = view @ mats[p["bone"]] @ np.array([[ps, 0, -p["px"] * ps], [0, ps, -p["py"] * ps], [0, 0, 1]])
         inv = np.linalg.inv(m)
         tile = img.transform((W, H), Image.AFFINE, tuple(inv[:2].flatten()),
                              resample=Image.BICUBIC)
