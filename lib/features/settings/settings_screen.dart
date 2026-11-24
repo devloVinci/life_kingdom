@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../core/game/models.dart';
+import '../../core/notifications/notification_providers.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_button.dart';
@@ -154,8 +155,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   children: [
                     Text('Notifications', style: AppText.headingPlain(20)),
                     Text(
-                        'Your choices are saved. Delivery of real phone notifications arrives in a later update.',
+                        ref.watch(notificationServiceProvider).supported
+                            ? 'Reminders are scheduled on your phone for the next two weeks and refreshed whenever you open the app.'
+                            : 'Phone notifications work in the Android and iPhone apps. In the browser your choices are saved but nothing is delivered.',
                         style: AppText.body(12)),
+                    if (ref.watch(notificationServiceProvider).supported)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Wrap(spacing: 8, runSpacing: 8, children: [
+                          GameButton(
+                            key: const Key('notif_enable'),
+                            label: 'Allow notifications',
+                            compact: true,
+                            onPressed: () async {
+                              final ok = await ref
+                                  .read(notificationServiceProvider)
+                                  .requestPermission();
+                              _toast(ok
+                                  ? 'Notifications allowed'
+                                  : 'Permission not granted. You can enable it in the phone settings.');
+                            },
+                          ),
+                          GameButton(
+                            key: const Key('notif_test'),
+                            label: 'Send a test',
+                            style: GameButtonStyle.blue,
+                            compact: true,
+                            onPressed: () =>
+                                ref.read(notificationServiceProvider).sendTest(),
+                          ),
+                        ]),
+                      ),
                     for (final t in _toggles)
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,

@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/providers.dart';
 import 'app/router.dart';
 import 'core/data/game_repository.dart';
+import 'core/notifications/notification_providers.dart';
+import 'core/notifications/notification_service_stub.dart'
+    if (dart.library.io) 'core/notifications/notification_service_mobile.dart';
 import 'core/theme/app_theme.dart';
 
 Future<void> main() async {
@@ -14,6 +17,8 @@ Future<void> main() async {
     overrides: [
       gameRepositoryProvider.overrideWithValue(repo),
       initialGameStateProvider.overrideWithValue(state),
+      notificationServiceProvider
+          .overrideWithValue(createPlatformNotificationService()),
     ],
     child: const LifeKingdomApp(),
   ));
@@ -26,6 +31,7 @@ class LifeKingdomApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(notificationSyncProvider);
     return MaterialApp.router(
       title: 'Life Kingdom',
       debugShowCheckedModeBanner: false,

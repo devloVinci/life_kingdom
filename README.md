@@ -15,3 +15,7 @@ flutter run -d chrome
 - `lib/core/widgets` - shared game widgets (button, panel, counters, rarity frame, rank badge, XP bar)
 - `lib/features/*` - one folder per feature/screen
 - `assets/characters/` - exported character SVG parts
+
+## Notifications (Android / iPhone)
+Scheduled with `flutter_local_notifications`; see `docs/notifications.md` for the
+one-time native setup after `flutter create`.
