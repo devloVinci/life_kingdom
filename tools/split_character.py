@@ -275,6 +275,8 @@ def main():
     pivots["head"] = [hb[0] + hb[2] / 2, hb[1] + hb[3] - 4] if hb else center
     bb = named("body", r"^(body|torso)")
     pivots["body"] = [bb[0] + bb[2] / 2, bb[1] + bb[3]] if bb else center
+    sb = of_role("shadow")
+    pivots["shadow"] = [sb[0] + sb[2] / 2, sb[1] + sb[3] / 2] if sb else center
 
     rig = {"name": name, "slug": slug, "width": width, "height": height,
            "parts": parts, "pivots": pivots}
