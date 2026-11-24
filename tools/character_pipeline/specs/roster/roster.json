@@ -1,0 +1,113 @@
+{
+ "style": "hand-painted 2D, dark ink outlines, cel-shading, top-left light; UI portrait (3/4 front) + 3/4 top-down 4-frame combat sheet",
+ "characters": [
+  {
+   "order": 1,
+   "slug": "juggernaut",
+   "name_ar": "ذو القُرَيْن",
+   "desc_ar": "المقاتل المدرع الثقيل ذو السيف العظيم",
+   "notes": "",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a heavy armored juggernaut with curved twin horns, dark obsidian-steel plates, glowing violet visor slit, and stern imposing gaze; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of heavy breathing idle, crouched energy wind-up, full 360-degree spinning greatsword cleave with a glowing violet arc smear, and triumphant stance, clean neutral background, no text labels"
+  },
+  {
+   "order": 2,
+   "slug": "dragon_hayyab",
+   "name_ar": "هَيّاب",
+   "desc_ar": "التنين المهيب النافث للنار",
+   "notes": "premium shop hero; roams the village map after purchase",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a majestic, imposing dragon with broad leathery wings, horned crown crest, dark crimson-and-ember scales, glowing molten eyes, and fierce regal presence; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of map-roaming patrol stride with sweeping wingbeat, neck-coiled fire breath wind-up, wide roaring flame-breath cone with blazing embers and scorched ground glow, and proud raised-wing victory pose, clean neutral background, no text labels"
+  },
+  {
+   "order": 3,
+   "slug": "firecrest_warrior",
+   "name_ar": "ضَرّام",
+   "desc_ar": "مقاتل العُرف الناري",
+   "notes": "",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a muscular warrior with a spiky fiery-orange mohawk, braided beard, leather tunic, red arm wraps, and determined scowl; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of alert idle, braced crouch, forward lunging broadsword thrust with an orange motion smear, and victory pose, clean neutral background, no text labels"
+  },
+  {
+   "order": 4,
+   "slug": "emerald_archer",
+   "name_ar": "قَنّاص الزُّمُرُّد",
+   "desc_ar": "الرامية ذات القلنسوة",
+   "notes": "",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a nimble archer wearing a dark emerald hood with a single feather, quiver, and focused gaze; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of poised idle, bowstring draw aiming, rapid triple-arrow volley with green motion trails, and victory pose, clean neutral background, no text labels"
+  },
+  {
+   "order": 5,
+   "slug": "stone_giant",
+   "name_ar": "جَلْمَد",
+   "desc_ar": "العملاق الحجري",
+   "notes": "",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a hulking stone-skinned brawler with broad rocky shoulders, brass waist belt, heavy fists, and stoic frown; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of heavy idle, raised-fist wind-up, double ground-slam shockwave with flying pebbles, and victory pose, clean neutral background, no text labels"
+  },
+  {
+   "order": 6,
+   "slug": "bomb_runner",
+   "name_ar": "وَثّاب",
+   "desc_ar": "المخرّب ذو القنبلة",
+   "notes": "",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a reckless runner in a skull-cap and brass goggles holding a glowing cyan-core round bomb with a wild grin; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of jittery idle, forward sprint lean, low bomb-toss with a cyan spark arc, and victory pose, clean neutral background, no text labels"
+  },
+  {
+   "order": 7,
+   "slug": "purple_mage",
+   "name_ar": "مُضِرّ",
+   "desc_ar": "الساحر الأرجواني",
+   "notes": "",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a charismatic mage with dark hair, gold-trimmed royal purple cape, glowing hands, and confident smirk; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of floating idle, gathered palm energy charge, spiral flame-orb blast with a violet-orange trail, and victory pose, clean neutral background, no text labels"
+  },
+  {
+   "order": 8,
+   "slug": "boar_rider",
+   "name_ar": "نَزّال",
+   "desc_ar": "فارس الخنزير البري",
+   "notes": "",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a fierce rider with a tribal bone shoulder guard, double-headed warhammer, and tough boar mount; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of restless mount idle, mid-air leap wind-up, spinning hammer slam with a dust ring, and victory pose, clean neutral background, no text labels"
+  },
+  {
+   "order": 9,
+   "slug": "axe_berserker",
+   "name_ar": "عَاصِف",
+   "desc_ar": "ذو الفأس المزدوجة",
+   "notes": "",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a fierce berserker with flowing copper-red hair, light steel shoulder plates, twin-bladed axe, and intense glare; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of aggressive idle, coiled spin wind-up, wide whirling double-axe vortex with a golden rim, and victory pose, clean neutral background, no text labels"
+  },
+  {
+   "order": 10,
+   "slug": "night_summoner",
+   "name_ar": "طَيْفِيّ",
+   "desc_ar": "المستدعي الليلي",
+   "notes": "",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a shadowy summoner in a dark star-speckled cloak and rune staff with calm piercing eyes; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of eerie idle, raised-staff ritual wind-up, pale cyan spectral wisp summon circling outward, and victory pose, clean neutral background, no text labels"
+  },
+  {
+   "order": 11,
+   "slug": "boulder_thrower",
+   "name_ar": "رَجّاف",
+   "desc_ar": "القاذف الصخري",
+   "notes": "",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a tall purple-skinned thrower in a dark hooded tunic cradling a heavy round boulder with a calm deadpan stare; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of still idle, boulder-roll wind-up, heavy boulder heave that bounces twice with ground impact rings, and victory pose, clean neutral background, no text labels"
+  },
+  {
+   "order": 12,
+   "slug": "cannon_cart",
+   "name_ar": "مِقْذاف",
+   "desc_ar": "المدفع المتنقل المدرع",
+   "notes": "",
+   "status": "prompt_only",
+   "prompt": "2D game character sheet featuring two sections in hand-painted 2D art with dark ink outlines, cel-shading, and unified top-left lighting: on the left, a 3/4 front UI portrait showing a mechanical twin-barrel cannon cart with spiked metal wheels, dark iron plating, and glowing core vents; on the right, a 3/4 top-down angled combat view (not pure top-down) with ground shadows showing a 4-frame animation grid of steady idle, barrel elevation aim, rapid twin-shot blast with muzzle smoke rings, and victory pose, clean neutral background, no text labels"
+  }
+ ]
+}
