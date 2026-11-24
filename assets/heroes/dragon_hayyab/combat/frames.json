@@ -1,0 +1,16 @@
+{
+ "frames": [
+  "walk",
+  "windup",
+  "breath",
+  "victory"
+ ],
+ "size": [
+  516,
+  360
+ ],
+ "anchor": [
+  0.6693,
+  0.9866
+ ]
+}

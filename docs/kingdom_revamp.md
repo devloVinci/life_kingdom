@@ -38,3 +38,20 @@ frame animation → asset in `assets/heroes/<slug>/` → hook into catalog + sho
 - Frame-sheet animation (4 painted frames) vs skeletal rig (smoother, more work) per hero.
 - Which buildings first and how many upgrade tiers.
 - Reward economy changes (chest odds, hero prices) — must keep `docs/game_rules.md` balance.
+
+## Progress
+### Step 1 — Dhul-Qurayn + Hayyab (done, needs on-device check)
+- Art: Figma file "Life Kingdom — Revamp Art Lab" (Dragon team), green-screen sheets.
+  Cloud sandbox cannot reach figma.com, so files are pulled through the desktop app
+  (built-in browser download → Downloads → staged).
+- `tools/character_pipeline/slice_sheet.py`: keys the background (shadows become neutral),
+  finds the poses, aligns them on one anchor, writes `<frame>.png` + `frames.json`.
+- Assets: `assets/heroes/juggernaut/` (portrait, combat: idle/windup/attack/victory),
+  `assets/heroes/dragon_hayyab/` (portrait, combat: walk/windup/breath/victory, flight: up/down).
+- Runtime: `lib/core/characters/sprite/` — `SpriteHero` (breathing idle, punch/lunge combo,
+  tap or timed attack) and `RoamingDragon` (wanders, flaps, moving shadow, lands and
+  breathes fire every ~20 s or on tap).
+- `LivingVillage` (lib/features/kingdom/living_village.dart) on the home screen shows owned
+  sprite heroes; Character Lab shows both heroes as a preview.
+- Catalog: `char_juggernaut` (epic, 1500 gold / 30 gems), `char_dragon_hayyab` (legendary, 150 gems).
+- Preview render: `docs/characters/village_preview.gif`.

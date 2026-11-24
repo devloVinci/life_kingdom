@@ -138,6 +138,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.text('Character Lab'), findsOneWidget);
+      expect(find.text('Living village (revamp preview)'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Victory'), 300,
+          scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Victory'));
       await tester.pump(const Duration(milliseconds: 800));
       expect(tester.takeException(), isNull);

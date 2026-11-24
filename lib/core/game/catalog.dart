@@ -79,6 +79,9 @@ class Catalog {
     ShopItem(id: 'char_huntress_queen', type: ItemType.character, name: 'Huntress Queen', rarity: ItemRarity.legendary, gemPrice: 150, description: 'A royal archer who rules the shadows.'),
     ShopItem(id: 'char_oracle', type: ItemType.character, name: 'Oracle', rarity: ItemRarity.legendary, gemPrice: 150, description: 'A wise guardian who sees the road ahead.'),
     ShopItem(id: 'char_lancer_champion', type: ItemType.character, name: 'Lancer Champion', rarity: ItemRarity.legendary, gemPrice: 150, description: 'A champion with a lance and an unbreakable will.'),
+    // Kingdom revamp heroes: painted frame animation (lib/core/characters/sprite/).
+    ShopItem(id: 'char_juggernaut', type: ItemType.character, name: 'Dhul-Qurayn', rarity: ItemRarity.epic, goldPrice: 1500, gemPrice: 30, description: 'A horned juggernaut in obsidian steel whose greatsword spins in a violet storm.'),
+    ShopItem(id: 'char_dragon_hayyab', type: ItemType.character, name: 'Hayyab', rarity: ItemRarity.legendary, gemPrice: 150, description: 'A majestic ember dragon. Once recruited, he patrols the skies over your village and breathes fire.'),
     // The Builder is a companion, not for sale.
     ShopItem(id: 'char_builder', type: ItemType.character, name: 'Builder', rarity: ItemRarity.rare, description: 'Your loyal Builder. He hammers whenever you do real work.'),
 

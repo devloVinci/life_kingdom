@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../characters/rig_data.dart';
 import '../characters/rig_poses.dart';
+import '../characters/sprite/sprite_hero.dart';
 import '../game/catalog.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
@@ -41,9 +42,11 @@ class CharacterAvatar extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.22),
         border: Border.all(color: AppColors.outline, width: 3),
       ),
-      child: slug == null
-          ? initial
-          : Padding(
+      child: spriteHeroFor(item.id) != null
+          ? SpriteHeroPortrait(def: spriteHeroFor(item.id)!, size: size)
+          : slug == null
+              ? initial
+              : Padding(
               padding: EdgeInsets.all(size * 0.06),
               child: CharacterRig(
                 slug: slug,

@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/widgets/game_button.dart';
 import '../../core/widgets/game_panel.dart';
+import '../kingdom/living_village.dart';
 
 /// Proof-of-concept screen for the painted, skinned hero.
 /// Shows every clip and the same character reused at the sizes the app
@@ -69,6 +70,17 @@ class _CharacterLabScreenState extends State<CharacterLabScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // 0. kingdom revamp: living village preview with the new heroes
+          Text('Living village (revamp preview)', style: AppText.heading(20)),
+          const SizedBox(height: 4),
+          Text('Tap Dhul-Qurayn to attack; tap Hayyab in the sky to make him land and breathe fire.',
+              style: AppText.body(12, color: Colors.white70)),
+          const SizedBox(height: 10),
+          const LivingVillage(
+            owned: {'char_juggernaut', 'char_dragon_hayyab'},
+            height: 320,
+          ),
+          const SizedBox(height: 24),
           // 1. stage with every clip
           Container(
             height: 380,

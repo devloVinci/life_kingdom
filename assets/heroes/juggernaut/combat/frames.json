@@ -1,0 +1,16 @@
+{
+ "frames": [
+  "idle",
+  "windup",
+  "attack",
+  "victory"
+ ],
+ "size": [
+  357,
+  360
+ ],
+ "anchor": [
+  0.5279,
+  0.9679
+ ]
+}

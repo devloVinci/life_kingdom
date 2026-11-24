@@ -41,3 +41,8 @@ flutter:
     - assets/characters/sorcerer/
     - assets/characters/warlord/
     - assets/heroes/hero_knight/
+    - assets/heroes/juggernaut/
+    - assets/heroes/juggernaut/combat/
+    - assets/heroes/dragon_hayyab/
+    - assets/heroes/dragon_hayyab/combat/
+    - assets/heroes/dragon_hayyab/flight/

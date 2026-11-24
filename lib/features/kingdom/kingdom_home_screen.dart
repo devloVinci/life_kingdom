@@ -17,6 +17,7 @@ import '../../core/widgets/game_panel.dart';
 import '../../core/widgets/rank_badge.dart';
 import '../../core/widgets/resource_counter.dart';
 import '../../core/widgets/xp_bar.dart';
+import 'living_village.dart';
 
 class KingdomHomeScreen extends ConsumerWidget {
   const KingdomHomeScreen({super.key});
@@ -42,6 +43,8 @@ class KingdomHomeScreen extends ConsumerWidget {
             ResourceCounter(type: ResourceType.gem, amount: s.gems),
             ResourceCounter(type: ResourceType.xp, amount: s.totalXp),
           ]),
+          const SizedBox(height: 16),
+          LivingVillage(owned: s.owned),
           const SizedBox(height: 16),
           GamePanel(
             child: Column(children: [
