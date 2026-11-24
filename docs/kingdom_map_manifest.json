@@ -1,0 +1,38 @@
+{
+  "note": "Kingdom Home (Figma frame 7:2, 390x844). Each layer is exported as SVG from the Figma page 'Flutter Export'. orig = position of the layer in the frame; off = offset of the exported SVG's top-left from orig (render bounds); size = exported SVG size.",
+  "frame": [390, 844],
+  "layers": [
+    {"name":"map_terrain","orig":[0,0],"off":[-27.27,0],"size":[450.7,844]},
+    {"name":"map_paths","orig":[0,0],"off":[0,0],"size":[390,844]},
+    {"name":"map_plaza","orig":[0,0],"off":[0,0],"size":[390,844]},
+    {"name":"map_pond","orig":[0,0],"off":[0,0],"size":[403,844]},
+    {"name":"map_trees","orig":[0,0],"off":[0,0],"size":[390,844]},
+    {"name":"bld_keep","building":"keep","orig":[120,232],"off":[-5.77,-24.5],"size":[161.53,196.2],"plate":[48,162]},
+    {"name":"bld_builders_hut","building":"builders_hut","orig":[45,416],"off":[-4.37,-3.11],"size":[108.73,96.11],"plate":[-0.5,86]},
+    {"name":"bld_army_camp","building":"army_camp","orig":[245,400],"off":[-0.5,0],"size":[110.5,93],"plate":[1,86]},
+    {"name":"bld_laboratory","building":"laboratory","orig":[37,164],"off":[0,-16.5],"size":[96,149.5],"plate":[3.5,126]},
+    {"name":"bld_treasury","building":"treasury","orig":[260,206],"off":[-6.5,-2.95],"size":[121,97.95],"plate":[12.5,88]},
+    {"name":"bld_clan_castle","building":"clan_castle","orig":[240,524],"off":[-3.5,0],"size":[126,121.9],"plate":[14.5,114]},
+    {"name":"bld_shop","building":"shop","orig":[36,552],"off":[-2.5,0],"size":[113,97],"plate":[26.5,90]},
+    {"name":"bld_magic_items","building":"magic_items","orig":[150,582],"off":[0,-5.03],"size":[90,121.13],"plate":[-2,110]}
+  ],
+  "characters": [
+    {"at":"builders_hut","orig":[146,443.2],"size":[50.82,58.8]},
+    {"at":"army_camp","orig":[206,446],"size":[50.82,58.8]},
+    {"at":"laboratory","orig":[56,318],"size":[50.82,58.8]},
+    {"at":"clan_castle","orig":[292,664],"size":[50.82,58.8]},
+    {"at":"keep","orig":[248,346],"size":[50.82,58.8]},
+    {"at":"keep_builder","orig":[90,366],"size":[48.4,56]}
+  ],
+  "hud": {
+    "avatar": {"at":[12,50],"size":64,"levelBadge":[-6,44]},
+    "name": {"at":[90,56],"font":"Lilita One 20"},
+    "xpBar": {"at":[88,86],"size":[128,22]},
+    "rankBadge": {"at":[160,38],"size":[48,52]},
+    "gold": {"at":[256,52]},
+    "gems": {"at":[279,98]},
+    "streakChip": {"at":[14,124]},
+    "bottomNav": {"top":736,"height":108,"items":["Habits","Quests","Heroes","Shop","More"]}
+  },
+  "badges": {"builders_hut":"busy builders","army_camp":"!","treasury":"$","shop":"NEW"}
+}
