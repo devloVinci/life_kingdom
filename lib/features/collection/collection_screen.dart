@@ -11,7 +11,9 @@ import '../../core/widgets/game_background.dart';
 
 /// Every hero in the game: owned ones in colour, locked ones dimmed.
 class CollectionScreen extends ConsumerWidget {
-  const CollectionScreen({super.key});
+  const CollectionScreen({super.key, this.showBack = true});
+
+  final bool showBack;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,11 +29,14 @@ class CollectionScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
             child: Row(children: [
-              IconButton(
-                tooltip: 'Back',
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => context.pop(),
-              ),
+              if (showBack)
+                IconButton(
+                  tooltip: 'Back',
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => context.pop(),
+                )
+              else
+                const SizedBox(width: 8),
               Expanded(child: Text('Heroes', style: AppText.heading(26))),
               Text('$ownedCount / ${heroes.length}',
                   style: AppText.heading(20, color: AppColors.gold)),

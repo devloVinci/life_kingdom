@@ -59,8 +59,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Your own rewards'), findsOneWidget);
 
-    // Profile and sub screens.
-    await tester.tap(find.text('Profile').last);
+    // Profile (opened from the HUD avatar on the home screen) and sub screens.
+    await tester.tap(find.text('Kingdom').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('hud_avatar')));
     await tester.pumpAndSettle();
     expect(find.text('Ranks'), findsOneWidget);
 

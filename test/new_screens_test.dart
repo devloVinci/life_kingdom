@@ -39,7 +39,7 @@ void main() {
   testWidgets('hero collection, detail, equip and companions', (tester) async {
     final c = await boot(tester, const GameState());
 
-    await tester.tap(find.text('Profile').last);
+    await tester.tap(find.byKey(const Key('hud_avatar')));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(GameButton, 'Heroes'));
     await tester.pumpAndSettle();

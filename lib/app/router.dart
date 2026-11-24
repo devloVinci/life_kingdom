@@ -35,8 +35,15 @@ GoRouter buildRouter() {
           GoRoute(path: '/habits', builder: (_, __) => const HabitsScreen()),
           GoRoute(path: '/quests', builder: (_, __) => const QuestsScreen()),
           GoRoute(path: '/shop', builder: (_, __) => const ShopScreen()),
-          GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+          GoRoute(
+              path: '/heroes',
+              builder: (_, __) => const CollectionScreen(showBack: false)),
         ],
+      ),
+      GoRoute(
+        path: '/profile',
+        parentNavigatorKey: rootKey,
+        builder: (_, __) => const ProfileScreen(),
       ),
       GoRoute(
         path: '/achievements',

@@ -34,7 +34,15 @@ class ProfileScreen extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Profile', style: AppText.heading(28)),
+          Row(children: [
+            IconButton(
+              tooltip: 'Back',
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () =>
+                  context.canPop() ? context.pop() : context.go('/home'),
+            ),
+            Text('Profile', style: AppText.heading(28)),
+          ]),
           const SizedBox(height: 12),
           GamePanel(
             child: Column(children: [
