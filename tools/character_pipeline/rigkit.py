@@ -151,6 +151,14 @@ def build(spec_path, art_path, out_dir):
         filled[hy, hx] = flat[src[labels[hy, hx]]]
         soft = cv2.GaussianBlur(filled, (0, 0), 2.0)
         filled[hy, hx] = soft[hy, hx]
+        # only fill where the body really continues behind the prop: the
+        # body silhouette without the props, closed over small gaps. Hole
+        # pixels outside it become transparent (no "ghost limbs").
+        rest = ((art[..., 3] > 40) & (hole == 0)).astype(np.uint8)
+        k = int(spec.get("fillClose", 31)) | 1
+        inside = cv2.morphologyEx(rest, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k)))
+        inside = cv2.GaussianBlur(inside.astype(np.float32), (0, 0), 1.5)
+        filled[..., 3] = np.where(hole > 0, filled[..., 3] * inside, filled[..., 3])
         rgb, a = filled[..., :3], filled[..., 3]
         af = a.astype(np.float32)[..., None] / 255
         unp = np.where(af > 0.01, rgb.astype(np.float32) / np.maximum(af, 0.01), 0)
@@ -163,7 +171,10 @@ def build(spec_path, art_path, out_dir):
     # 2) body mesh with smooth (blurred) bone weights
     xs, ys, occ = _grid_mesh(body[..., 3], 0, 0, W, H, cell)
     grid_pts = [(x, y) for y in ys for x in xs]
-    owner = _assign_regions(grid_pts, spec["regions"], bidx).reshape(len(ys), len(xs))
+    # limbs cut into their own skinned layers must not pull the body mesh
+    limb = {n for L in spec.get("layers", []) for n in L.get("skin", [])}
+    body_regions = [r for r in spec["regions"] if r[0] not in limb]
+    owner = _assign_regions(grid_pts, body_regions, bidx).reshape(len(ys), len(xs))
     wgrid = np.stack([cv2.GaussianBlur((owner == b).astype(np.float32), (0, 0), sigmaX=0.85)
                       for b in range(len(bones))])
 
@@ -177,10 +188,29 @@ def build(spec_path, art_path, out_dir):
                "mesh": _mesh(xs, ys, occ, body_w)}]
     order = spec.get("drawOrder")
     for L, fname, (x0, y0, x1, y1), alpha in prop_layers:
-        lxs, lys, locc = _grid_mesh(alpha, x0, y0, x1, y1, cell * 2)
-        b = bidx[L["bone"]]
+        if L.get("skin"):
+            # limb layer: skinned like the body (bends at the elbow), but its
+            # mesh only covers the limb, so nothing stretches to the torso
+            lxs, lys, locc = _grid_mesh(alpha, x0, y0, x1, y1, cell)
+            pts = [(x, y) for y in lys for x in lxs]
+            names = set(L["skin"])
+            regs = [r for r in spec["regions"] if r[0] in names]
+            own = _assign_regions(pts, regs, bidx).reshape(len(lys), len(lxs))
+            lw = np.stack([cv2.GaussianBlur((own == b).astype(np.float32), (0, 0), sigmaX=0.85)
+                           for b in range(len(bones))])
+
+            def limb_w(i, j, lw=lw):
+                w = lw[:, j, i]
+                top = np.argsort(-w)[:MAX_INF]
+                tw = w[top] / max(w[top].sum(), 1e-6)
+                return [(b, x) for b, x in zip(top, tw)]
+            mesh = _mesh(lxs, lys, locc, limb_w)
+        else:
+            lxs, lys, locc = _grid_mesh(alpha, x0, y0, x1, y1, cell * 2)
+            b = bidx[L["bone"]]
+            mesh = _mesh(lxs, lys, locc, lambda i, j, b=b: [(b, 1.0)])
         layers.append({"name": L["name"], "image": fname, "offset": [int(x0), int(y0)],
-                       "mesh": _mesh(lxs, lys, locc, lambda i, j, b=b: [(b, 1.0)])})
+                       "mesh": mesh})
     if order:
         layers.sort(key=lambda l: order.index(l["name"]))
 

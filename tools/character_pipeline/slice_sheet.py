@@ -46,8 +46,8 @@ def key(img, bg, lo=0.20, hi=0.45):
     orig = np.asarray(img.convert("RGB")).astype(np.float32) / 255.0
     if cold.any():
         tint = orig[..., hot].min(axis=2) - orig[..., cold].max(axis=2)
-        shade = tint > 0.12
         lum = orig[..., hot].min(axis=2) / max(1e-3, float(bg[hot].min()))
+        shade = (tint > 0.12) & (lum < 0.88) & (a < 0.98)
         sa = np.clip(1.0 - lum, 0, 1) * 0.85
         rgb[shade] = 0.04
         a = np.where(shade, np.minimum(sa, 0.6), a)
