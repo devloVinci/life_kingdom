@@ -11,8 +11,9 @@ void main() {
   setUpAll(() => AppText.useGoogleFonts = false);
 
   testWidgets('create a habit, complete it, see level up', (tester) async {
-    tester.view.physicalSize = const Size(800, 1600);
-    tester.view.devicePixelRatio = 2;
+    // Test fallback font (Ahem) is very wide, so use a roomy surface.
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
     final repo = InMemoryGameRepository();

@@ -65,7 +65,10 @@ class _GameButtonState extends State<GameButton> {
               Icon(widget.icon, color: Colors.white, size: 22),
               const SizedBox(width: 8),
             ],
-            Text(widget.label, style: AppText.heading(18)),
+            Flexible(
+              child: Text(widget.label,
+                  textAlign: TextAlign.center, style: AppText.heading(18)),
+            ),
           ],
         ),
       ),
