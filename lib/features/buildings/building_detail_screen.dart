@@ -3,11 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
+import '../../core/characters/rig_poses.dart';
 import '../../core/game/catalog.dart';
+import '../../core/game/companion_engine.dart';
 import '../../core/game/economy_engine.dart';
 import '../../core/game/game_config.dart';
+import '../../core/game/game_engine.dart';
+import '../../core/game/models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
+import '../../core/widgets/character_avatar.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_button.dart';
 import '../../core/widgets/game_panel.dart';
@@ -93,6 +98,7 @@ class BuildingDetailScreen extends ConsumerWidget {
                         style: AppText.body(13, color: AppColors.panelPrimary)),
                   ]),
             ),
+            ..._extras(context, s, buildingId),
             const SizedBox(height: 12),
             GamePanel(
               child: b.upgrading
@@ -142,5 +148,125 @@ class BuildingDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// Building-specific panels (each building shows what it actually does).
+List<Widget> _extras(BuildContext context, GameState s, String id) {
+  Widget panel(String title, List<Widget> children) => Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: GamePanel(
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppText.headingPlain(18)),
+                const SizedBox(height: 6),
+                ...children,
+              ]),
+        ),
+      );
+  Widget line(String t) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Text(t, style: AppText.body(13)));
+  final level = s.buildingLevel(id);
+
+  switch (id) {
+    case 'keep':
+      final level0 = GameEngine.level(s);
+      final next = level + 1;
+      return [
+        panel('Kingdom levels', [
+          line('Every building can be upgraded up to the Keep level ($level).'),
+          if (level < GameConfig.maxBuildingLevel)
+            line(
+                'Keep level $next needs player level ${EconomyEngine.keepPlayerLevelRequirement(next)} (you are level $level0).'),
+          const SizedBox(height: 4),
+          for (final b in Catalog.buildings.where((b) => b.id != 'keep'))
+            line('${b.name}: level ${s.buildingLevel(b.id)}'),
+        ]),
+      ];
+    case 'builders_hut':
+      final busy = EconomyEngine.busyBuilders(s);
+      final slots = EconomyEngine.builderSlots(s);
+      final active = [
+        for (final e in s.buildings.entries)
+          if (e.value.upgrading) e.key,
+      ];
+      return [
+        panel('Your Builder', [
+          Center(
+            child: CharacterAvatar(
+              item: Catalog.byId['char_builder']!,
+              size: 96,
+              anim: busy > 0 ? RigAnim.work : RigAnim.idle,
+              animate: true,
+            ),
+          ),
+          Center(
+              child: Text(
+                  busy > 0 ? 'Hammering away!' : 'Waiting for a project',
+                  style: AppText.body(13))),
+          const SizedBox(height: 6),
+          line('Builders busy: $busy / $slots'),
+          line('A second builder joins at level 5, a third at level 10.'),
+          for (final a in active)
+            line(
+                '${Catalog.buildingById[a]?.name ?? a}: ${EconomyEngine.daysLeft(s, a)} work day(s) left'),
+        ]),
+      ];
+    case 'treasury':
+      return [
+        panel('Gold bonus', [
+          line('Now: +${(level - 1) * 2}% gold from habits.'),
+          if (level < GameConfig.maxBuildingLevel)
+            line('Next level: +${level * 2}%.'),
+        ]),
+      ];
+    case 'army_camp':
+      return [
+        panel('Companions', [
+          line(
+              'Active slots: ${s.companions.length} / ${CompanionEngine.slots(s)}'),
+          if (CompanionEngine.nextSlotLevel(s) != null)
+            line('Next slot at level ${CompanionEngine.nextSlotLevel(s)}.'),
+          const SizedBox(height: 8),
+          Center(
+            child: GameButton(
+              label: 'Manage companions',
+              icon: Icons.pets,
+              style: GameButtonStyle.blue,
+              onPressed: () => context.push('/companions'),
+            ),
+          ),
+        ]),
+      ];
+    case 'clan_castle':
+      final hero = Catalog.byId[s.equipped['character']];
+      return [
+        panel('Favourite hero', [
+          if (hero != null)
+            Row(children: [
+              CharacterAvatar(item: hero, size: 56),
+              const SizedBox(width: 12),
+              Expanded(child: Text(hero.name, style: AppText.headingPlain(18))),
+            ]),
+          const SizedBox(height: 8),
+          Center(
+            child: GameButton(
+              label: 'Choose hero',
+              icon: Icons.groups,
+              style: GameButtonStyle.blue,
+              onPressed: () => context.push('/collection'),
+            ),
+          ),
+        ]),
+      ];
+    default:
+      // Laboratory, Shop stock tiers and Magic Items are not active yet.
+      return [
+        panel('Coming soon', [
+          line('The effect of this building arrives in a later update. You can already upgrade it.'),
+        ]),
+      ];
   }
 }

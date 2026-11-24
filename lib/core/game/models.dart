@@ -249,6 +249,7 @@ class GameState {
     this.claimedQuests = const {},
     this.achievements = const {},
     this.settings = const {},
+    this.companions = const [],
   });
 
   static const schemaVersion = 1;
@@ -285,6 +286,9 @@ class GameState {
   /// User settings (notification toggles etc.).
   final Map<String, bool> settings;
 
+  /// Owned character ids that follow the player (limited by the Army Camp).
+  final List<String> companions;
+
   bool setting(String key, {bool fallback = true}) =>
       settings[key] ?? fallback;
 
@@ -307,6 +311,7 @@ class GameState {
     Set<String>? claimedQuests,
     Map<String, String>? achievements,
     Map<String, bool>? settings,
+    List<String>? companions,
   }) =>
       GameState(
         playerName: playerName ?? this.playerName,
@@ -324,6 +329,7 @@ class GameState {
         claimedQuests: claimedQuests ?? this.claimedQuests,
         achievements: achievements ?? this.achievements,
         settings: settings ?? this.settings,
+        companions: companions ?? this.companions,
       );
 
   /// Full backup document (also used for local persistence).
@@ -344,6 +350,7 @@ class GameState {
         'claimedQuests': (claimedQuests.toList()..sort()),
         'achievements': achievements,
         'settings': settings,
+        'companions': companions,
       };
 
   /// Throws [FormatException] for unknown versions or malformed data.
@@ -387,6 +394,7 @@ class GameState {
             (j['achievements'] as Map?) ?? const {}),
         settings:
             Map<String, bool>.from((j['settings'] as Map?) ?? const {}),
+        companions: ((j['companions'] as List?) ?? const []).cast<String>(),
       );
     } on TypeError catch (e) {
       throw FormatException('Malformed backup: $e');

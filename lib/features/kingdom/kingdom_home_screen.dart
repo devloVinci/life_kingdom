@@ -6,6 +6,7 @@ import '../../app/providers.dart';
 import '../../core/game/catalog.dart';
 import '../../core/game/economy_engine.dart';
 import '../../core/game/game_engine.dart';
+import '../../core/game/models.dart';
 import '../../core/game/xp_curve.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
@@ -98,6 +99,8 @@ class KingdomHomeScreen extends ConsumerWidget {
                 Catalog.byId['char_raider']!,
             title: Catalog.byId[s.equipped['title']]?.name,
           ),
+          const SizedBox(height: 16),
+          _CrewPanel(state: s),
           if (s.chests.isNotEmpty) ...[
             const SizedBox(height: 16),
             GamePanel(
@@ -218,7 +221,10 @@ class _HeroPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GamePanel(
+    return GestureDetector(
+      key: const Key('hero_panel'),
+      onTap: () => context.push('/character/${character.id}'),
+      child: GamePanel(
       child: Row(children: [
         CharacterAvatar(item: character, size: 84, animate: true),
         const SizedBox(width: 12),
@@ -231,6 +237,50 @@ class _HeroPanel extends StatelessWidget {
               ]),
         ),
       ]),
+    ));
+  }
+}
+
+/// The Builder (hammering while an upgrade is running) and your companions.
+class _CrewPanel extends StatelessWidget {
+  const _CrewPanel({required this.state});
+
+  final GameState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final busy = EconomyEngine.busyBuilders(state) > 0;
+    final builder = Catalog.byId['char_builder']!;
+    final companions = [
+      for (final id in state.companions)
+        if (Catalog.byId[id] != null) Catalog.byId[id]!,
+    ];
+    return GestureDetector(
+      key: const Key('crew_panel'),
+      onTap: () => context.push('/companions'),
+      child: GamePanel(
+        child: SizedBox(
+          height: 96,
+          child: ListView(scrollDirection: Axis.horizontal, children: [
+            Column(children: [
+              CharacterAvatar(
+                item: builder,
+                size: 64,
+                anim: busy ? RigAnim.work : RigAnim.idle,
+                animate: true,
+              ),
+              Text(busy ? 'Building!' : 'Resting', style: AppText.body(11)),
+            ]),
+            for (final c in companions) ...[
+              const SizedBox(width: 12),
+              Column(children: [
+                CharacterAvatar(item: c, size: 64, anim: RigAnim.walk, animate: true),
+                Text(c.name, style: AppText.body(11)),
+              ]),
+            ],
+          ]),
+        ),
+      ),
     );
   }
 }

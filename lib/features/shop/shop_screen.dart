@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../core/game/catalog.dart';
@@ -112,7 +113,12 @@ class _ItemCard extends ConsumerWidget {
       );
     }
 
-    return RarityFrame(
+    return GestureDetector(
+      key: Key('item_${item.id}'),
+      onTap: () => item.type == ItemType.character
+          ? context.push('/character/${item.id}')
+          : showItemPreview(context, ref, item),
+      child: RarityFrame(
       rarity: rarityOf(item.rarity),
       selected: equipped,
       child: Padding(
@@ -133,7 +139,7 @@ class _ItemCard extends ConsumerWidget {
           action,
         ]),
       ),
-    );
+    ));
   }
 }
 
@@ -194,6 +200,82 @@ class _PriceLine extends StatelessWidget {
           style: AppText.body(13, color: AppColors.panelPrimary)),
     );
   }
+}
+
+/// Bottom sheet preview for titles and backgrounds (heroes have their own
+/// detail screen).
+Future<void> showItemPreview(
+    BuildContext context, WidgetRef ref, ShopItem item) {
+  return showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.panel,
+    isScrollControlled: true,
+    builder: (ctx) => Consumer(builder: (ctx, ref, _) {
+      final s = ref.watch(gameProvider);
+      final owned = s.owned.contains(item.id);
+      final equipped = s.equipped[item.slot] == item.id;
+      final big = item.type == ItemType.background
+          ? Container(
+              height: 140,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(item.gradient![0]), Color(item.gradient![1])],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.outline, width: 3),
+              ),
+            )
+          : Container(
+              height: 90,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: rarityOf(item.rarity).color,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.outline, width: 3),
+              ),
+              child: Text(item.name, style: AppText.heading(26)),
+            );
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            big,
+            const SizedBox(height: 12),
+            Text(item.name, style: AppText.headingPlain(22)),
+            Text(item.description,
+                textAlign: TextAlign.center, style: AppText.body(14)),
+            if (!owned) _PriceLine(item: item),
+            const SizedBox(height: 12),
+            if (equipped)
+              const GameButton(label: 'Equipped', onPressed: null)
+            else if (owned)
+              GameButton(
+                label: 'Equip',
+                style: GameButtonStyle.blue,
+                onPressed: () {
+                  ref.read(gameProvider.notifier).equip(item.id);
+                  Navigator.pop(ctx);
+                },
+              )
+            else if (item.forSale)
+              GameButton(
+                key: const Key('preview_buy'),
+                label: 'Buy',
+                style: GameButtonStyle.gold,
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  showPurchaseDialog(context, ref, item);
+                },
+              )
+            else
+              Text('Earn this by playing.', style: AppText.body(13)),
+          ]),
+        ),
+      );
+    }),
+  );
 }
 
 Future<void> showPurchaseDialog(

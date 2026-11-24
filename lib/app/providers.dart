@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/data/game_repository.dart';
 import '../core/game/achievement_engine.dart';
+import '../core/game/companion_engine.dart';
 import '../core/game/economy_engine.dart';
 import '../core/game/game_engine.dart';
 import '../core/game/models.dart';
@@ -111,6 +112,20 @@ class GameController extends Notifier<GameState> {
     final o = EconomyEngine.skipDays(state, id);
     if (o.ok) _set(o.state);
     return o;
+  }
+
+  // ---- Companions ----
+
+  CompanionStatus addCompanion(String id) {
+    final o = CompanionEngine.add(state, id);
+    if (o.ok) _set(o.state);
+    return o.status;
+  }
+
+  CompanionStatus removeCompanion(String id) {
+    final o = CompanionEngine.remove(state, id);
+    if (o.ok) _set(o.state);
+    return o.status;
   }
 
   // ---- Chests ----

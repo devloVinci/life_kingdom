@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../core/game/quest_engine.dart';
@@ -116,7 +117,10 @@ class _QuestCard extends ConsumerWidget {
       action = Text('${view.progress} / ${view.target}',
           style: AppText.headingPlain(16, color: AppColors.panelPrimary));
     }
-    return GamePanel(
+    return GestureDetector(
+      key: Key('quest_${t.id}'),
+      onTap: () => context.push('/quest/${Uri.encodeComponent(view.key)}'),
+      child: GamePanel(
       padding: const EdgeInsets.all(12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -126,28 +130,40 @@ class _QuestCard extends ConsumerWidget {
         const SizedBox(height: 2),
         Text(t.description, style: AppText.body(13)),
         const SizedBox(height: 8),
-        Container(
-          height: 14,
-          decoration: BoxDecoration(
-            color: AppColors.panelDeep,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.outline, width: 2),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: FractionallySizedBox(
-                widthFactor: view.fraction,
-                child: Container(color: AppColors.xp),
-              ),
-            ),
-          ),
-        ),
+        QuestBar(fraction: view.fraction),
         const SizedBox(height: 6),
         Text(rewardText(t),
             style: AppText.body(12, color: AppColors.panelPrimary)),
       ]),
+    ));
+  }
+}
+
+/// Progress bar shared by the quest list and the quest detail screen.
+class QuestBar extends StatelessWidget {
+  const QuestBar({super.key, required this.fraction});
+
+  final double fraction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 14,
+      decoration: BoxDecoration(
+        color: AppColors.panelDeep,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.outline, width: 2),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: fraction,
+            child: Container(color: AppColors.xp),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -3,11 +3,15 @@ import 'package:go_router/go_router.dart';
 
 import '../features/buildings/building_detail_screen.dart';
 import '../features/buildings/buildings_screen.dart';
+import '../features/collection/character_detail_screen.dart';
+import '../features/collection/collection_screen.dart';
+import '../features/collection/companions_screen.dart';
 import '../features/habits/habit_form_screen.dart';
 import '../features/habits/habits_screen.dart';
 import '../features/kingdom/kingdom_home_screen.dart';
 import '../features/profile/achievements_screen.dart';
 import '../features/profile/profile_screen.dart';
+import '../features/quests/quest_detail_screen.dart';
 import '../features/quests/quests_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/stats/calendar_stats_screen.dart';
@@ -59,6 +63,28 @@ GoRouter buildRouter() {
         parentNavigatorKey: rootKey,
         builder: (_, state) =>
             BuildingDetailScreen(buildingId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/collection',
+        parentNavigatorKey: rootKey,
+        builder: (_, __) => const CollectionScreen(),
+      ),
+      GoRoute(
+        path: '/character/:id',
+        parentNavigatorKey: rootKey,
+        builder: (_, state) =>
+            CharacterDetailScreen(characterId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/companions',
+        parentNavigatorKey: rootKey,
+        builder: (_, __) => const CompanionsScreen(),
+      ),
+      GoRoute(
+        path: '/quest/:key',
+        parentNavigatorKey: rootKey,
+        builder: (_, state) =>
+            QuestDetailScreen(questKey: state.pathParameters['key']!),
       ),
       GoRoute(
         path: '/habit/new',

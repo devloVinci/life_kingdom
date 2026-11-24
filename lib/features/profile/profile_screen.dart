@@ -104,6 +104,18 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           Wrap(spacing: 12, runSpacing: 12, alignment: WrapAlignment.center, children: [
             GameButton(
+              label: 'Heroes',
+              icon: Icons.groups,
+              style: GameButtonStyle.gold,
+              onPressed: () => context.push('/collection'),
+            ),
+            GameButton(
+              label: 'Companions',
+              icon: Icons.pets,
+              style: GameButtonStyle.blue,
+              onPressed: () => context.push('/companions'),
+            ),
+            GameButton(
               label: 'Achievements',
               icon: Icons.emoji_events,
               style: GameButtonStyle.gold,
