@@ -9,6 +9,7 @@ import '../core/game/economy_engine.dart';
 import '../core/game/game_engine.dart';
 import '../core/game/models.dart';
 import '../core/game/quest_engine.dart';
+import '../core/game/task_engine.dart';
 
 /// Overridden in main() / tests.
 final gameRepositoryProvider =
@@ -63,6 +64,18 @@ class GameController extends Notifier<GameState> {
   void deleteHabit(String id) => _set(GameEngine.deleteHabit(state, id));
 
   String newHabitId() => _now.microsecondsSinceEpoch.toString();
+
+  // ---- Tasks (one-off to-dos) ----
+
+  void addTask(TaskItem t) => _set(TaskEngine.add(state, t));
+  void deleteTask(String id) => _set(TaskEngine.delete(state, id));
+  void clearDoneTasks() => _set(TaskEngine.clearDone(state));
+
+  CompletionOutcome completeTask(String id) {
+    final o = TaskEngine.complete(state, id, _now);
+    if (o.ok) _set(o.state);
+    return o;
+  }
 
   // ---- Shop ----
 

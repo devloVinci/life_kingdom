@@ -40,7 +40,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Go to the habits tab and complete it.
-    await tester.tap(find.text('Habits').last);
+    await tester.tap(find.text('Today').last);
     await tester.pumpAndSettle();
     expect(find.text('Read'), findsOneWidget);
 

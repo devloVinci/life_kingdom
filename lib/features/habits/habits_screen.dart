@@ -11,12 +11,20 @@ import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_button.dart';
 import '../../core/widgets/game_panel.dart';
 import '../../core/widgets/reward_feedback.dart';
+import 'tasks_view.dart';
 
-class HabitsScreen extends ConsumerWidget {
+class HabitsScreen extends ConsumerStatefulWidget {
   const HabitsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HabitsScreen> createState() => _HabitsScreenState();
+}
+
+class _HabitsScreenState extends ConsumerState<HabitsScreen> {
+  bool _tasks = false;
+
+  @override
+  Widget build(BuildContext context) {
     final s = ref.watch(gameProvider);
     final now = ref.watch(clockProvider)();
     final key = dateKeyOf(now);
@@ -32,8 +40,29 @@ class HabitsScreen extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text("Today's Habits", style: AppText.heading(28)),
+          Text(_tasks ? 'Tasks' : "Today's Habits",
+              style: AppText.heading(28)),
           const SizedBox(height: 12),
+          Row(children: [
+            ChoiceChip(
+              key: const Key('seg_habits'),
+              label: const Text('Habits'),
+              selected: !_tasks,
+              onSelected: (_) => setState(() => _tasks = false),
+            ),
+            const SizedBox(width: 8),
+            ChoiceChip(
+              key: const Key('seg_tasks'),
+              label: Text(
+                  'Tasks (${s.tasks.where((t) => !t.done).length})'),
+              selected: _tasks,
+              onSelected: (_) => setState(() => _tasks = true),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          if (_tasks)
+            const TasksView()
+          else ...[
           if (active.isEmpty)
             GamePanel(
               child: Column(children: [
@@ -60,6 +89,7 @@ class HabitsScreen extends ConsumerWidget {
               onPressed: () => context.push('/habit/new'),
             ),
           ),
+          ],
         ],
       ),
     );

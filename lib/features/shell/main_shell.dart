@@ -13,7 +13,7 @@ class MainShell extends StatelessWidget {
   final Widget child;
 
   static const _tabs = [
-    _Tab('/habits', Icons.checklist, 'Habits', AppColors.buttonGreen),
+    _Tab('/habits', Icons.checklist, 'Today', AppColors.buttonGreen),
     _Tab('/quests', Icons.flag, 'Quests', Color(0xFFFF8A3D)),
     _Tab('/home', Icons.castle, 'Kingdom', AppColors.gold, big: true),
     _Tab('/heroes', Icons.shield, 'Heroes', AppColors.gem),
@@ -39,7 +39,7 @@ class MainShell extends StatelessWidget {
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 78,
+            height: 96,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.spaceAround,

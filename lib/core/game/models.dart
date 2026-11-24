@@ -232,6 +232,60 @@ class CustomReward {
       );
 }
 
+/// A one-off to-do (as opposed to a repeating [Habit]).
+class TaskItem {
+  const TaskItem({
+    required this.id,
+    required this.title,
+    this.difficulty = Difficulty.medium,
+    this.dueKey,
+    this.doneKey,
+    this.rewarded = false,
+  });
+
+  final String id;
+  final String title;
+  final Difficulty difficulty;
+
+  /// Due date as yyyy-MM-dd, or null for "whenever".
+  final String? dueKey;
+
+  /// Date it was completed, or null while open.
+  final String? doneKey;
+
+  /// False when it was finished after the daily reward cap was reached.
+  final bool rewarded;
+
+  bool get done => doneKey != null;
+
+  TaskItem copyWith({String? doneKey, bool? rewarded}) => TaskItem(
+        id: id,
+        title: title,
+        difficulty: difficulty,
+        dueKey: dueKey,
+        doneKey: doneKey ?? this.doneKey,
+        rewarded: rewarded ?? this.rewarded,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'difficulty': difficulty.name,
+        if (dueKey != null) 'dueKey': dueKey,
+        if (doneKey != null) 'doneKey': doneKey,
+        'rewarded': rewarded,
+      };
+
+  factory TaskItem.fromJson(Map<String, dynamic> j) => TaskItem(
+        id: j['id'] as String,
+        title: j['title'] as String,
+        difficulty: Difficulty.values.byName(j['difficulty'] as String),
+        dueKey: j['dueKey'] as String?,
+        doneKey: j['doneKey'] as String?,
+        rewarded: (j['rewarded'] as bool?) ?? false,
+      );
+}
+
 class GameState {
   const GameState({
     this.playerName = 'Hero',
@@ -250,6 +304,7 @@ class GameState {
     this.achievements = const {},
     this.settings = const {},
     this.companions = const [],
+    this.tasks = const [],
   });
 
   static const schemaVersion = 1;
@@ -257,6 +312,7 @@ class GameState {
   static const defaultEquipped = {'character': 'char_raider'};
 
   final String playerName;
+  final List<TaskItem> tasks;
   final int totalXp;
   final int gold;
   final int gems;
@@ -312,6 +368,7 @@ class GameState {
     Map<String, String>? achievements,
     Map<String, bool>? settings,
     List<String>? companions,
+    List<TaskItem>? tasks,
   }) =>
       GameState(
         playerName: playerName ?? this.playerName,
@@ -330,6 +387,7 @@ class GameState {
         achievements: achievements ?? this.achievements,
         settings: settings ?? this.settings,
         companions: companions ?? this.companions,
+        tasks: tasks ?? this.tasks,
       );
 
   /// Full backup document (also used for local persistence).
@@ -351,6 +409,7 @@ class GameState {
         'achievements': achievements,
         'settings': settings,
         'companions': companions,
+        'tasks': tasks.map((t) => t.toJson()).toList(),
       };
 
   /// Throws [FormatException] for unknown versions or malformed data.
@@ -395,6 +454,9 @@ class GameState {
         settings:
             Map<String, bool>.from((j['settings'] as Map?) ?? const {}),
         companions: ((j['companions'] as List?) ?? const []).cast<String>(),
+        tasks: ((j['tasks'] as List?) ?? const [])
+            .map((e) => TaskItem.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList(),
       );
     } on TypeError catch (e) {
       throw FormatException('Malformed backup: $e');

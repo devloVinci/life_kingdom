@@ -314,27 +314,88 @@ class _VillageMapState extends ConsumerState<VillageMap>
 
     sprites.sort((a, b) => a.$1.compareTo(b.$1));
 
-    return Container(
-      color: const Color(0xFF6DBB3A),
-      child: Center(
-        child: FittedBox(
-          fit: BoxFit.contain,
-          child: SizedBox(
-            width: stageW,
-            height: stageH,
-            child: ClipRect(
-              child: Stack(clipBehavior: Clip.none, children: [
-                const Positioned.fill(child: _Ground()),
-                Positioned.fill(
-                    child: _Ambient(t: _t, treasury: s.buildingLevel('treasury'))),
-                for (final sp in sprites) sp.$2,
-              ]),
-            ),
-          ),
-        ),
+    final stage = SizedBox(
+      width: stageW,
+      height: stageH,
+      child: ClipRect(
+        child: Stack(clipBehavior: Clip.none, children: [
+          const Positioned.fill(child: _Ground()),
+          Positioned.fill(
+              child: _Ambient(t: _t, treasury: s.buildingLevel('treasury'))),
+          for (final sp in sprites) sp.$2,
+        ]),
       ),
     );
+
+    // The stage keeps its proportions; whatever is left over on big or
+    // wide screens is filled with more meadow and trees.
+    return LayoutBuilder(builder: (context, box) {
+      final k = math.min(box.maxWidth / stageW, box.maxHeight / stageH);
+      final sw = stageW * k, sh = stageH * k;
+      final rect = Rect.fromLTWH(
+          (box.maxWidth - sw) / 2, (box.maxHeight - sh) / 2, sw, sh);
+      return DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF8CCC4D), Color(0xFF70BF3B), Color(0xFF549E2E)],
+          ),
+        ),
+        child: Stack(children: [
+          Positioned.fill(
+              child: CustomPaint(painter: _MarginPainter(rect, k))),
+          Center(child: FittedBox(fit: BoxFit.contain, child: stage)),
+        ]),
+      );
+    });
   }
+}
+
+/// Meadow, flowers and trees outside the main stage.
+class _MarginPainter extends CustomPainter {
+  _MarginPainter(this.stage, this.k);
+  final Rect stage;
+  final double k;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rnd = math.Random(11);
+    final tuft = Paint()..color = const Color(0x2233691F);
+    final flowers = [Colors.white, const Color(0xFFFFE27A), const Color(0xFFFF9EC4)];
+    for (var i = 0; i < 160; i++) {
+      final p = Offset(rnd.nextDouble() * size.width, rnd.nextDouble() * size.height);
+      if (stage.inflate(-2).contains(p)) continue;
+      if (i % 5 == 0) {
+        canvas.drawCircle(p, 2.2 * k.clamp(.8, 2), Paint()..color = flowers[i % 3]);
+      } else {
+        canvas.drawOval(Rect.fromCenter(center: p, width: 16 * k, height: 6 * k), tuft);
+      }
+    }
+    final step = 96 * k;
+    final line = Paint()
+      ..color = AppColors.outline
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    for (var y = 20.0; y < size.height; y += step) {
+      for (var x = 8.0; x < size.width; x += step) {
+        final c = Offset(x + rnd.nextDouble() * step * .6,
+            y + rnd.nextDouble() * step * .6);
+        final r = (18 + rnd.nextDouble() * 6) * k;
+        if (stage.inflate(r).contains(c)) continue;
+        canvas.drawRect(
+            Rect.fromLTWH(c.dx - r * .18, c.dy + r * .5, r * .36, r * .9),
+            Paint()..color = AppColors.woodDark);
+        canvas.drawCircle(c, r, Paint()..color = const Color(0xFF2F7A25));
+        canvas.drawCircle(c, r, line);
+        canvas.drawCircle(c.translate(-r * .25, -r * .25), r * .55,
+            Paint()..color = const Color(0xFF4DAA3A));
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_MarginPainter old) => old.stage != stage;
 }
 
 /// Opens a chest and shows the reward (shared with the old home screen).
