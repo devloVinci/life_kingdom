@@ -12,12 +12,16 @@ class GameButton extends StatefulWidget {
     required this.onPressed,
     this.style = GameButtonStyle.primary,
     this.icon,
+    this.compact = false,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final GameButtonStyle style;
   final IconData? icon;
+
+  /// Smaller padding and text, for use inside list cards.
+  final bool compact;
 
   @override
   State<GameButton> createState() => _GameButtonState();
@@ -48,7 +52,9 @@ class _GameButtonState extends State<GameButton> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 70),
         margin: EdgeInsets.only(top: _down ? depth : 0),
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+        padding: widget.compact
+            ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
+            : const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(
           color: face,
           borderRadius: BorderRadius.circular(14),
@@ -67,7 +73,7 @@ class _GameButtonState extends State<GameButton> {
             ],
             Flexible(
               child: Text(widget.label,
-                  textAlign: TextAlign.center, style: AppText.heading(18)),
+                  textAlign: TextAlign.center, style: AppText.heading(widget.compact ? 14 : 18)),
             ),
           ],
         ),

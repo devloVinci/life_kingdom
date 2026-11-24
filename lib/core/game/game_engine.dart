@@ -176,12 +176,15 @@ class GameEngine {
 
     final baseXp = GameConfig.habitXp[habit.difficulty]!;
     final xp = (baseXp * (100 + bonusPct) + 50) ~/ 100;
-    final gold = GameConfig.habitGold[habit.difficulty]!;
+    final baseGold = GameConfig.habitGold[habit.difficulty]!;
+    final treasuryPct = (s.buildingLevel('treasury') - 1) * 2;
+    final gold = (baseGold * (100 + treasuryPct) + 50) ~/ 100;
 
     final totalXp = s.totalXp + xp;
     var goldTotal = s.gold + gold;
     var gems = s.gems;
     final chests = [...s.chests];
+    final owned = {...s.owned};
     final events = <GameEvent>[];
 
     // Level-ups (possibly several at once).
@@ -198,6 +201,8 @@ class GameEngine {
           gems += r.reward.gems;
           goldTotal += r.reward.gold;
           if (r.reward.chest != null) chests.add(r.reward.chest!);
+          final t = GameConfig.rankTitles[r.name];
+          if (t != null) owned.add(t);
         }
       }
     }
@@ -212,6 +217,8 @@ class GameEngine {
         goldTotal += m.gold;
         gems += m.gems;
         if (m.chest != null) chests.add(m.chest!);
+        final t = GameConfig.milestoneTitles[current];
+        if (t != null) owned.add(t);
         streak = streak.copyWith(
             milestonesClaimed: {...streak.milestonesClaimed, current});
       }
@@ -223,6 +230,7 @@ class GameEngine {
       gold: goldTotal,
       gems: gems,
       chests: chests,
+      owned: owned,
       streak: streak,
       completions: [
         ...s.completions,

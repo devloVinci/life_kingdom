@@ -4,6 +4,17 @@ class GameConfig {
 
   static const maxLevel = 100;
   static const maxActiveHabits = 20;
+  static const maxBuildingLevel = 10;
+
+  /// Titles granted automatically (item ids from the catalog).
+  static const milestoneTitles = <int, String>{
+    30: 'title_steadfast',
+    100: 'title_unbreakable',
+  };
+  static const rankTitles = <String, String>{
+    'C': 'title_rising_star',
+    'National Level': 'title_national',
+  };
 
   // Habit rewards by difficulty.
   static const habitXp = {

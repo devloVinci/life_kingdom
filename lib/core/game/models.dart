@@ -147,6 +147,91 @@ class StreakState {
       );
 }
 
+class BuildingState {
+  const BuildingState({
+    this.level = 1,
+    this.upgradeTarget,
+    this.upgradeStartKey,
+    this.workDaysNeeded = 0,
+    this.skippedDays = 0,
+  });
+
+  final int level;
+
+  /// Level being built, or null when idle.
+  final int? upgradeTarget;
+  final String? upgradeStartKey;
+  final int workDaysNeeded;
+  final int skippedDays;
+
+  bool get upgrading => upgradeTarget != null;
+
+  BuildingState copyWith({
+    int? level,
+    int? skippedDays,
+    bool clearUpgrade = false,
+  }) =>
+      BuildingState(
+        level: level ?? this.level,
+        upgradeTarget: clearUpgrade ? null : upgradeTarget,
+        upgradeStartKey: clearUpgrade ? null : upgradeStartKey,
+        workDaysNeeded: clearUpgrade ? 0 : workDaysNeeded,
+        skippedDays: clearUpgrade ? 0 : (skippedDays ?? this.skippedDays),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'level': level,
+        'upgradeTarget': upgradeTarget,
+        'upgradeStartKey': upgradeStartKey,
+        'workDaysNeeded': workDaysNeeded,
+        'skippedDays': skippedDays,
+      };
+
+  factory BuildingState.fromJson(Map<String, dynamic> j) => BuildingState(
+        level: (j['level'] as int?) ?? 1,
+        upgradeTarget: j['upgradeTarget'] as int?,
+        upgradeStartKey: j['upgradeStartKey'] as String?,
+        workDaysNeeded: (j['workDaysNeeded'] as int?) ?? 0,
+        skippedDays: (j['skippedDays'] as int?) ?? 0,
+      );
+}
+
+/// A reward the user defines (a real-life treat) and buys with gold.
+class CustomReward {
+  const CustomReward({
+    required this.id,
+    required this.title,
+    required this.priceGold,
+    this.timesRedeemed = 0,
+  });
+
+  final String id;
+  final String title;
+  final int priceGold;
+  final int timesRedeemed;
+
+  CustomReward copyWith({int? timesRedeemed}) => CustomReward(
+        id: id,
+        title: title,
+        priceGold: priceGold,
+        timesRedeemed: timesRedeemed ?? this.timesRedeemed,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'priceGold': priceGold,
+        'timesRedeemed': timesRedeemed,
+      };
+
+  factory CustomReward.fromJson(Map<String, dynamic> j) => CustomReward(
+        id: j['id'] as String,
+        title: j['title'] as String,
+        priceGold: j['priceGold'] as int,
+        timesRedeemed: (j['timesRedeemed'] as int?) ?? 0,
+      );
+}
+
 class GameState {
   const GameState({
     this.playerName = 'Hero',
@@ -157,9 +242,15 @@ class GameState {
     this.completions = const [],
     this.streak = const StreakState(),
     this.chests = const [],
+    this.owned = defaultOwned,
+    this.equipped = defaultEquipped,
+    this.buildings = const {},
+    this.customRewards = const [],
   });
 
   static const schemaVersion = 1;
+  static const defaultOwned = {'char_raider', 'char_builder'};
+  static const defaultEquipped = {'character': 'char_raider'};
 
   final String playerName;
   final int totalXp;
@@ -172,6 +263,19 @@ class GameState {
   /// Unopened chests ('wooden', 'silver', 'golden', 'legendary').
   final List<String> chests;
 
+  /// Owned shop item ids.
+  final Set<String> owned;
+
+  /// slot ('character' | 'title' | 'background') -> item id.
+  final Map<String, String> equipped;
+
+  /// Missing entries mean level 1, idle.
+  final Map<String, BuildingState> buildings;
+  final List<CustomReward> customRewards;
+
+  BuildingState building(String id) => buildings[id] ?? const BuildingState();
+  int buildingLevel(String id) => building(id).level;
+
   GameState copyWith({
     String? playerName,
     int? totalXp,
@@ -181,6 +285,10 @@ class GameState {
     List<Completion>? completions,
     StreakState? streak,
     List<String>? chests,
+    Set<String>? owned,
+    Map<String, String>? equipped,
+    Map<String, BuildingState>? buildings,
+    List<CustomReward>? customRewards,
   }) =>
       GameState(
         playerName: playerName ?? this.playerName,
@@ -191,6 +299,10 @@ class GameState {
         completions: completions ?? this.completions,
         streak: streak ?? this.streak,
         chests: chests ?? this.chests,
+        owned: owned ?? this.owned,
+        equipped: equipped ?? this.equipped,
+        buildings: buildings ?? this.buildings,
+        customRewards: customRewards ?? this.customRewards,
       );
 
   /// Full backup document (also used for local persistence).
@@ -204,6 +316,10 @@ class GameState {
         'completions': completions.map((c) => c.toJson()).toList(),
         'streak': streak.toJson(),
         'chests': chests,
+        'owned': (owned.toList()..sort()),
+        'equipped': equipped,
+        'buildings': buildings.map((k, v) => MapEntry(k, v.toJson())),
+        'customRewards': customRewards.map((c) => c.toJson()).toList(),
       };
 
   /// Throws [FormatException] for unknown versions or malformed data.
@@ -228,6 +344,19 @@ class GameState {
         streak: StreakState.fromJson(
             Map<String, dynamic>.from(j['streak'] as Map)),
         chests: ((j['chests'] as List?) ?? const []).cast<String>(),
+        owned: j['owned'] == null
+            ? defaultOwned
+            : (j['owned'] as List).cast<String>().toSet(),
+        equipped: j['equipped'] == null
+            ? defaultEquipped
+            : Map<String, String>.from(j['equipped'] as Map),
+        buildings: ((j['buildings'] as Map?) ?? const {}).map((k, v) =>
+            MapEntry(k as String,
+                BuildingState.fromJson(Map<String, dynamic>.from(v as Map)))),
+        customRewards: ((j['customRewards'] as List?) ?? const [])
+            .map((e) =>
+                CustomReward.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList(),
       );
     } on TypeError catch (e) {
       throw FormatException('Malformed backup: $e');

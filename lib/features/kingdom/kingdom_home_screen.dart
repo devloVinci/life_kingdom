@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
+import '../../core/game/catalog.dart';
+import '../../core/game/economy_engine.dart';
 import '../../core/game/game_engine.dart';
 import '../../core/game/xp_curve.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
+import '../../core/widgets/character_avatar.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_button.dart';
 import '../../core/widgets/game_panel.dart';
@@ -88,6 +91,40 @@ class KingdomHomeScreen extends ConsumerWidget {
               ),
             ),
           ]),
+          const SizedBox(height: 16),
+          _HeroPanel(
+            character: Catalog.byId[s.equipped['character']] ??
+                Catalog.byId['char_raider']!,
+            title: Catalog.byId[s.equipped['title']]?.name,
+          ),
+          if (s.chests.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            GamePanel(
+              child: Column(children: [
+                Text('Chests to open', style: AppText.headingPlain(18)),
+                const SizedBox(height: 8),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final type in s.chests.toSet())
+                    GameButton(
+                      label:
+                          '$type x${s.chests.where((c) => c == type).length}',
+                      compact: true,
+                      style: GameButtonStyle.gold,
+                      onPressed: () => _openChest(context, ref, type),
+                    ),
+                ]),
+              ]),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Center(
+            child: GameButton(
+              label: 'Buildings (${EconomyEngine.busyBuilders(s)}/${EconomyEngine.builderSlots(s)} builders busy)',
+              icon: Icons.construction,
+              style: GameButtonStyle.blue,
+              onPressed: () => context.push('/buildings'),
+            ),
+          ),
           const SizedBox(height: 24),
           Center(
             child: s.habits.isEmpty
@@ -134,6 +171,64 @@ class _StatTile extends StatelessWidget {
         Text(value, style: AppText.headingPlain(20)),
         Text(label,
             textAlign: TextAlign.center, style: AppText.body(11)),
+      ]),
+    );
+  }
+}
+
+Future<void> _openChest(BuildContext context, WidgetRef ref, String type) async {
+  final r = ref.read(gameProvider.notifier).openChest(type);
+  if (r == null || !context.mounted) return;
+  final item = r.itemId == null ? null : Catalog.byId[r.itemId!];
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => Dialog(
+      backgroundColor: Colors.transparent,
+      child: GamePanel(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('Chest opened!', style: AppText.headingPlain(26, color: AppColors.panelPrimary)),
+          const SizedBox(height: 12),
+          Text('+${r.gold} gold', style: AppText.body(18)),
+          if (r.gems > 0) Text('+${r.gems} gems', style: AppText.body(18)),
+          if (item != null) ...[
+            const SizedBox(height: 12),
+            CharacterAvatar(item: item),
+            const SizedBox(height: 6),
+            Text(
+                r.duplicate
+                    ? '${item.name} (duplicate, converted to currency)'
+                    : 'New hero: ${item.name}!',
+                textAlign: TextAlign.center,
+                style: AppText.body(15)),
+          ],
+          const SizedBox(height: 16),
+          GameButton(label: 'Nice!', onPressed: () => Navigator.pop(ctx)),
+        ]),
+      ),
+    ),
+  );
+}
+
+class _HeroPanel extends StatelessWidget {
+  const _HeroPanel({required this.character, this.title});
+
+  final ShopItem character;
+  final String? title;
+
+  @override
+  Widget build(BuildContext context) {
+    return GamePanel(
+      child: Row(children: [
+        CharacterAvatar(item: character),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(character.name, style: AppText.headingPlain(20)),
+                Text(title ?? 'No title equipped', style: AppText.body(13)),
+              ]),
+        ),
       ]),
     );
   }

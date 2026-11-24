@@ -48,4 +48,34 @@ void main() {
     expect(saved.completions, hasLength(1));
     expect(saved.totalXp, 20);
   });
+
+  testWidgets('buy and equip a hero in the shop', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repo = InMemoryGameRepository();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        gameRepositoryProvider.overrideWithValue(repo),
+        initialGameStateProvider.overrideWithValue(const GameState(gold: 500)),
+        clockProvider.overrideWithValue(() => DateTime(2026, 1, 1, 9)),
+      ],
+      child: const LifeKingdomApp(),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Shop').last);
+    await tester.pumpAndSettle();
+
+    // Archer (200 gold) is the first purchasable hero card.
+    await tester.tap(find.text('Buy').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('200 gold').last);
+    await tester.pumpAndSettle();
+
+    final saved = await repo.load();
+    expect(saved.gold, 300);
+    expect(saved.owned, contains('char_archer'));
+  });
 }
