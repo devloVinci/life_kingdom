@@ -150,6 +150,39 @@ class GameEngine {
   static GameState deleteHabit(GameState s, String id) =>
       s.copyWith(habits: s.habits.where((x) => x.id != id).toList());
 
+  /// Adds [xp] and pays level-up / rank-up rewards (gold, gems, chests,
+  /// titles). Used by habits and quest claims.
+  static (GameState, List<GameEvent>) grantXp(GameState s, int xp) {
+    final totalXp = s.totalXp + xp;
+    var gold = s.gold;
+    var gems = s.gems;
+    final chests = [...s.chests];
+    final owned = {...s.owned};
+    final events = <GameEvent>[];
+    final oldLevel = XpCurve.levelForXp(s.totalXp);
+    final newLevel = XpCurve.levelForXp(totalXp);
+    for (var l = oldLevel + 1; l <= newLevel; l++) {
+      events.add(LevelUp(l));
+      gold += GameConfig.levelUpGoldPerLevel * l;
+      if (l % GameConfig.levelUpGemsEvery == 0) gems += GameConfig.levelUpGems;
+      for (final r in GameConfig.ranks.where((r) => r.fromLevel == l)) {
+        if (r.fromLevel > 1) {
+          events.add(RankUp(r.name));
+          gems += r.reward.gems;
+          gold += r.reward.gold;
+          if (r.reward.chest != null) chests.add(r.reward.chest!);
+          final t = GameConfig.rankTitles[r.name];
+          if (t != null) owned.add(t);
+        }
+      }
+    }
+    return (
+      s.copyWith(
+          totalXp: totalXp, gold: gold, gems: gems, chests: chests, owned: owned),
+      events
+    );
+  }
+
   // ---- Completing and undoing ----
 
   static CompletionOutcome complete(
@@ -180,32 +213,12 @@ class GameEngine {
     final treasuryPct = (s.buildingLevel('treasury') - 1) * 2;
     final gold = (baseGold * (100 + treasuryPct) + 50) ~/ 100;
 
-    final totalXp = s.totalXp + xp;
-    var goldTotal = s.gold + gold;
-    var gems = s.gems;
-    final chests = [...s.chests];
-    final owned = {...s.owned};
-    final events = <GameEvent>[];
-
-    // Level-ups (possibly several at once).
-    final oldLevel = XpCurve.levelForXp(s.totalXp);
-    final newLevel = XpCurve.levelForXp(totalXp);
-    for (var l = oldLevel + 1; l <= newLevel; l++) {
-      events.add(LevelUp(l));
-      goldTotal += GameConfig.levelUpGoldPerLevel * l;
-      if (l % GameConfig.levelUpGemsEvery == 0) gems += GameConfig.levelUpGems;
-      final rank = GameConfig.ranks.where((r) => r.fromLevel == l);
-      for (final r in rank) {
-        if (r.fromLevel > 1) {
-          events.add(RankUp(r.name));
-          gems += r.reward.gems;
-          goldTotal += r.reward.gold;
-          if (r.reward.chest != null) chests.add(r.reward.chest!);
-          final t = GameConfig.rankTitles[r.name];
-          if (t != null) owned.add(t);
-        }
-      }
-    }
+    final (gs, levelEvents) = grantXp(s.copyWith(gold: s.gold + gold), xp);
+    var goldTotal = gs.gold;
+    var gems = gs.gems;
+    final chests = [...gs.chests];
+    final owned = {...gs.owned};
+    final events = <GameEvent>[...levelEvents];
 
     // Streak milestone.
     var streak = s.streak;
@@ -226,7 +239,7 @@ class GameEngine {
     streak = streak.copyWith(longest: max(streak.longest, current));
 
     final next = s.copyWith(
-      totalXp: totalXp,
+      totalXp: gs.totalXp,
       gold: goldTotal,
       gems: gems,
       chests: chests,

@@ -246,6 +246,9 @@ class GameState {
     this.equipped = defaultEquipped,
     this.buildings = const {},
     this.customRewards = const [],
+    this.claimedQuests = const {},
+    this.achievements = const {},
+    this.settings = const {},
   });
 
   static const schemaVersion = 1;
@@ -273,6 +276,18 @@ class GameState {
   final Map<String, BuildingState> buildings;
   final List<CustomReward> customRewards;
 
+  /// Claimed quest instance keys (e.g. 'daily:2026-01-01:d_three').
+  final Set<String> claimedQuests;
+
+  /// Unlocked achievement id -> date key it was unlocked.
+  final Map<String, String> achievements;
+
+  /// User settings (notification toggles etc.).
+  final Map<String, bool> settings;
+
+  bool setting(String key, {bool fallback = true}) =>
+      settings[key] ?? fallback;
+
   BuildingState building(String id) => buildings[id] ?? const BuildingState();
   int buildingLevel(String id) => building(id).level;
 
@@ -289,6 +304,9 @@ class GameState {
     Map<String, String>? equipped,
     Map<String, BuildingState>? buildings,
     List<CustomReward>? customRewards,
+    Set<String>? claimedQuests,
+    Map<String, String>? achievements,
+    Map<String, bool>? settings,
   }) =>
       GameState(
         playerName: playerName ?? this.playerName,
@@ -303,6 +321,9 @@ class GameState {
         equipped: equipped ?? this.equipped,
         buildings: buildings ?? this.buildings,
         customRewards: customRewards ?? this.customRewards,
+        claimedQuests: claimedQuests ?? this.claimedQuests,
+        achievements: achievements ?? this.achievements,
+        settings: settings ?? this.settings,
       );
 
   /// Full backup document (also used for local persistence).
@@ -320,6 +341,9 @@ class GameState {
         'equipped': equipped,
         'buildings': buildings.map((k, v) => MapEntry(k, v.toJson())),
         'customRewards': customRewards.map((c) => c.toJson()).toList(),
+        'claimedQuests': (claimedQuests.toList()..sort()),
+        'achievements': achievements,
+        'settings': settings,
       };
 
   /// Throws [FormatException] for unknown versions or malformed data.
@@ -357,6 +381,12 @@ class GameState {
             .map((e) =>
                 CustomReward.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList(),
+        claimedQuests:
+            ((j['claimedQuests'] as List?) ?? const []).cast<String>().toSet(),
+        achievements: Map<String, String>.from(
+            (j['achievements'] as Map?) ?? const {}),
+        settings:
+            Map<String, bool>.from((j['settings'] as Map?) ?? const {}),
       );
     } on TypeError catch (e) {
       throw FormatException('Malformed backup: $e');

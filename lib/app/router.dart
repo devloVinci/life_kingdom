@@ -6,7 +6,11 @@ import '../features/buildings/buildings_screen.dart';
 import '../features/habits/habit_form_screen.dart';
 import '../features/habits/habits_screen.dart';
 import '../features/kingdom/kingdom_home_screen.dart';
-import '../features/placeholder/coming_soon_screen.dart';
+import '../features/profile/achievements_screen.dart';
+import '../features/profile/profile_screen.dart';
+import '../features/quests/quests_screen.dart';
+import '../features/settings/settings_screen.dart';
+import '../features/stats/calendar_stats_screen.dart';
 import '../features/shell/main_shell.dart';
 import '../features/shop/shop_screen.dart';
 
@@ -25,14 +29,25 @@ GoRouter buildRouter() {
           GoRoute(
               path: '/home', builder: (_, __) => const KingdomHomeScreen()),
           GoRoute(path: '/habits', builder: (_, __) => const HabitsScreen()),
-          GoRoute(
-              path: '/quests',
-              builder: (_, __) => const ComingSoonScreen(title: 'Quests')),
+          GoRoute(path: '/quests', builder: (_, __) => const QuestsScreen()),
           GoRoute(path: '/shop', builder: (_, __) => const ShopScreen()),
-          GoRoute(
-              path: '/profile',
-              builder: (_, __) => const ComingSoonScreen(title: 'Profile')),
+          GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
         ],
+      ),
+      GoRoute(
+        path: '/achievements',
+        parentNavigatorKey: rootKey,
+        builder: (_, __) => const AchievementsScreen(),
+      ),
+      GoRoute(
+        path: '/calendar',
+        parentNavigatorKey: rootKey,
+        builder: (_, __) => const CalendarStatsScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        parentNavigatorKey: rootKey,
+        builder: (_, __) => const SettingsScreen(),
       ),
       GoRoute(
         path: '/buildings',

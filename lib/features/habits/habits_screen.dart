@@ -92,6 +92,12 @@ class _HabitTile extends ConsumerWidget {
                       final c = ref.read(gameProvider.notifier);
                       final o = done ? c.undo(habit.id) : c.complete(habit.id);
                       showOutcomeFeedback(context, o);
+                      final unlocked = c.takeUnlocked();
+                      if (unlocked.isNotEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(
+                                'Achievement unlocked: ${unlocked.map((a) => a.title).join(', ')}')));
+                      }
                     },
               child: Container(
                 width: 46,

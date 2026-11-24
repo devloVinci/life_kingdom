@@ -30,11 +30,16 @@ Future<void> showOutcomeFeedback(
     case CompletionStatus.notCompleted:
       break;
   }
-  if (o.events.isEmpty || !context.mounted) return;
+  if (!context.mounted) return;
+  await showEvents(context, o.events);
+}
 
+/// Celebration dialog for level-ups, rank-ups and streak milestones.
+Future<void> showEvents(BuildContext context, List<GameEvent> events) async {
+  if (events.isEmpty) return;
   final lines = <String>[];
   var title = 'Well done!';
-  for (final e in o.events) {
+  for (final e in events) {
     switch (e) {
       case LevelUp(:final level):
         title = 'LEVEL UP!';

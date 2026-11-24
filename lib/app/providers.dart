@@ -3,9 +3,11 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/data/game_repository.dart';
+import '../core/game/achievement_engine.dart';
 import '../core/game/economy_engine.dart';
 import '../core/game/game_engine.dart';
 import '../core/game/models.dart';
+import '../core/game/quest_engine.dart';
 
 /// Overridden in main() / tests.
 final gameRepositoryProvider =
@@ -26,9 +28,20 @@ class GameController extends Notifier<GameState> {
 
   DateTime get _now => ref.read(clockProvider)();
 
+  final List<AchievementDef> _unlocked = [];
+
   void _set(GameState s) {
-    state = s;
-    ref.read(gameRepositoryProvider).save(s);
+    final r = AchievementEngine.evaluate(s, _now);
+    _unlocked.addAll(r.unlocked);
+    state = r.state;
+    ref.read(gameRepositoryProvider).save(r.state);
+  }
+
+  /// Achievements unlocked since the last call (for a snackbar).
+  List<AchievementDef> takeUnlocked() {
+    final l = [..._unlocked];
+    _unlocked.clear();
+    return l;
   }
 
   CompletionOutcome complete(String habitId) {
@@ -107,4 +120,23 @@ class GameController extends Notifier<GameState> {
     if (r != null) _set(r.state);
     return r;
   }
+
+  // ---- Quests ----
+
+  ClaimOutcome claimQuest(String key) {
+    final o = QuestEngine.claim(state, key, _now);
+    if (o.ok) _set(o.state);
+    return o;
+  }
+
+  // ---- Profile / settings / backup ----
+
+  void setPlayerName(String name) =>
+      _set(state.copyWith(playerName: name.trim().isEmpty ? 'Hero' : name.trim()));
+
+  void setSetting(String key, bool value) =>
+      _set(state.copyWith(settings: {...state.settings, key: value}));
+
+  /// Replaces everything (backup restore / reset).
+  void replaceState(GameState s) => _set(s);
 }
