@@ -15,7 +15,7 @@ class XpBar extends StatelessWidget {
     return Container(
       height: 24,
       decoration: BoxDecoration(
-        color: AppColors.woodDark,
+        color: AppColors.panelDeep,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.outline, width: 3),
       ),

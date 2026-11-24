@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
 
-enum GameButtonStyle { primary, gold, danger }
+enum GameButtonStyle { primary, blue, gold, danger }
 
 /// Chunky 3D button that presses down on tap.
 class GameButton extends StatefulWidget {
@@ -28,6 +28,7 @@ class _GameButtonState extends State<GameButton> {
 
   (Color, Color) get _colors => switch (widget.style) {
         GameButtonStyle.primary => (AppColors.success, AppColors.successDark),
+        GameButtonStyle.blue => (AppColors.buttonBlue, AppColors.panelPrimary),
         GameButtonStyle.gold => (AppColors.gold, AppColors.goldDark),
         GameButtonStyle.danger => (AppColors.danger, AppColors.dangerDark),
       };
@@ -37,7 +38,7 @@ class _GameButtonState extends State<GameButton> {
     final enabled = widget.onPressed != null;
     final (face, edge) = enabled
         ? _colors
-        : (AppColors.common, const Color(0xFF6B7580));
+        : (AppColors.buttonDisabled, const Color(0xFF6E6858));
     const depth = 5.0;
     return GestureDetector(
       onTapDown: enabled ? (_) => setState(() => _down = true) : null,

@@ -16,12 +16,12 @@ class ResourceCounter extends StatelessWidget {
     final (color, dark, icon) = switch (type) {
       ResourceType.gold => (AppColors.gold, AppColors.goldDark, Icons.circle),
       ResourceType.gem => (AppColors.gem, AppColors.gemDark, Icons.diamond),
-      ResourceType.xp => (AppColors.xp, const Color(0xFF7B3FD0), Icons.star),
+      ResourceType.xp => (AppColors.xp, const Color(0xFF2F7FD6), Icons.star),
     };
     return Container(
       padding: const EdgeInsets.fromLTRB(4, 4, 14, 4),
       decoration: BoxDecoration(
-        color: AppColors.woodDark,
+        color: AppColors.panelDeep,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.outline, width: 3),
       ),

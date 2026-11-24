@@ -6,6 +6,7 @@ import 'app_colors.dart';
 class AppText {
   AppText._();
 
+  /// Figma: Heading/S 20, Counter 18, Button/Label 20, Caption Nunito ExtraBold 12.
   static TextStyle heading(double size, {Color color = AppColors.textLight}) =>
       GoogleFonts.lilitaOne(
         fontSize: size,
