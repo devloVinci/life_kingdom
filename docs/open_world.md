@@ -36,6 +36,22 @@ runs with placeholders.
   snow -> volcanic -> shadow.
 - Tasks now count toward the streak.
 
+## v0.2
+- Few characters on purpose: knight (hero), warrior (`barbarian_v2`),
+  archer, builder, goblin.
+- Army: barracks in the kingdom trains warriors (30 gold + 5 supplies,
+  power 1) and archers (60 + 10, power 2); camp size 8 + level/2 (max 40);
+  soldiers stroll around the camp.
+- World: 18 fixed landmarks; tap one inside the light -> march costs
+  supplies, needs army power, gives gold (+gems far out) and a banner.
+- Sandbox (Diwan -> sandbox, or the red badge): separate save
+  (`life_kingdom_sandbox`), start from a copy of real progress or empty;
+  level slider, resources, fake tasks, +1/+7 days (time jump), goblin,
+  record tower, soldiers, reset conquests; no notifications; real save
+  restored on exit.
+- Animation picker (in the sandbox): choose which pack animation each
+  character uses; saved on the device (`ow_anim_overrides`).
+
 ## Numbers
 All in `WorldConfig` (`lib/core/game/world_engine.dart`).
 
@@ -44,5 +60,5 @@ All in `WorldConfig` (`lib/core/game/world_engine.dart`).
 first guesses: check them in Diwan -> asset gallery and fix there.
 
 ## Not yet
-Army, marches with supplies, bosses, freed villages, decree, merchant,
+Bosses, freed villages, decree, merchant,
 herald, chronicle, seasons, focus siege, return quest, Arabic settings.
