@@ -25,3 +25,13 @@ jobs:
           name: screenshots
           path: test_visual/goldens/
           if-no-files-found: warn
+      - name: Print screenshots (base64 jpeg)
+        if: always()
+        run: |
+          cd test_visual/goldens || exit 0
+          for f in *.png; do
+            convert "$f" -resize 50% -quality 82 "/tmp/${f%.png}.jpg"
+            echo "=====SHOT ${f%.png}"
+            base64 -w 0 "/tmp/${f%.png}.jpg"; echo
+            echo "=====END"
+          done
