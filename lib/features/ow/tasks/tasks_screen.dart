@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
+import '../../../core/game/game_config.dart';
 import '../../../core/game/game_engine.dart';
 import '../../../core/game/models.dart';
 import '../../../core/game/world_engine.dart';

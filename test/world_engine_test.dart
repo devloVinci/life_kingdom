@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:life_kingdom/core/game/game_config.dart';
 import 'package:life_kingdom/core/game/game_engine.dart';
 import 'package:life_kingdom/core/game/models.dart';
 import 'package:life_kingdom/core/game/task_engine.dart';

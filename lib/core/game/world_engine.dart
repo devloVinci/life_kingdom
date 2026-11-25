@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'game_config.dart';
 import 'game_engine.dart';
 import 'models.dart';
 
