@@ -14,7 +14,7 @@ void main() {
     final o = TaskEngine.complete(withTasks(1), 't0', now);
     expect(o.ok, isTrue);
     expect(o.state.totalXp, 20);
-    expect(o.state.gold, 10);
+    expect(o.state.gold, 10 + 20); // task gold + level 2 reward
     expect(o.state.tasks.first.done, isTrue);
 
     final again = TaskEngine.complete(o.state, 't0', now);

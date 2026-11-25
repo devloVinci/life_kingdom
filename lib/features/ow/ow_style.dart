@@ -73,7 +73,7 @@ class OwPanel extends StatelessWidget {
             BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 3))
           ],
         ),
-        child: child,
+        child: Material(type: MaterialType.transparency, child: child),
       );
 }
 
