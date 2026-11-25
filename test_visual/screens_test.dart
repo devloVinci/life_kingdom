@@ -2,7 +2,6 @@
 // test`). Run with:  flutter test --update-goldens test_visual
 // The PNGs land in test_visual/goldens/.
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

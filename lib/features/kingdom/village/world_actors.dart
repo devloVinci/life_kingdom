@@ -12,22 +12,20 @@ enum ActorMode { idle, look, walk, act, react, fly }
 /// follows the roads, the dragon walks or flies straight to favourite spots.
 class WorldSim extends ChangeNotifier {
   WorldSim({required Set<String> unlockedRegions, int seed = 1})
-      : _unlocked = unlockedRegions,
+      : unlocked = unlockedRegions,
         _rnd = math.Random(seed) {
     hero = HeroSim(this);
     dragon = DragonSim(this);
   }
 
   final math.Random _rnd;
-  Set<String> _unlocked;
+  /// Regions the dragon may visit.
+  Set<String> unlocked;
   late final HeroSim hero;
   late final DragonSim dragon;
 
   /// Seconds since the world started.
   double time = 0;
-
-  Set<String> get unlocked => _unlocked;
-  set unlocked(Set<String> v) => _unlocked = v;
 
   void tick(double dt) {
     time += dt;

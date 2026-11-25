@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// One stackable SVG layer of a character (all layers share one canvas).
@@ -60,7 +59,6 @@ class RigData {
   static final Map<String, Future<RigData?>> _cache = {};
 
   /// Forgets loaded rigs (tests that pump several apps in a row).
-  @visibleForTesting
   static void clearCache() => _cache.clear();
 
   /// Loads (and caches) a rig; resolves to null when the character has no art.
