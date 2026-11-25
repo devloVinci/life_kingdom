@@ -52,6 +52,16 @@ runs with placeholders.
 - Animation picker (in the sandbox): choose which pack animation each
   character uses; saved on the device (`ow_anim_overrides`).
 
+## Character animations
+The pack's `character_animations.json` (copied as
+`assets/openworld/characters.json`) is the source of truth:
+`characters -> <char> -> animations -> <anim> -> directions -> <dir>`,
+with `mirror_of` + `flip_x` for undrawn sides. `CharacterLibrary`
+(`lib/game/atlas/character_anims.dart`) resolves it; slots in
+`anim_overrides.dart` pick a named animation per use (knight idle,
+warrior walk, ...). The knight sheet has no walk, so he marches with idle;
+`barbarian_v2` has no idle, so its walk's first frame stands still.
+
 ## Numbers
 All in `WorldConfig` (`lib/core/game/world_engine.dart`).
 
