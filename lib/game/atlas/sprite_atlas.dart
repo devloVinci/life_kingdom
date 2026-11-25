@@ -161,6 +161,9 @@ class Atlases {
     'flora_rocks_resources',
     'walls_corners',
     'ui_elements_a',
+    'army_barracks_spells_lab',
+    'barbarian_v2_idle_move',
+    'archer_actions',
   ];
   static const world = [
     'grass_dirt_mud',
@@ -170,6 +173,9 @@ class Atlases {
     'landmarks_pois',
     'storages_townhall_builder',
     'knight',
+    'battlefield_scars',
+    'barbarian_v2_idle_move',
+    'archer_actions',
   ];
 
   /// Everything the import script copies (also listed in the gallery).
@@ -195,6 +201,7 @@ class Atlases {
     'scout_reporter',
     'royal_herald_mounted',
     'barbarian_v2_idle_move',
+    'barbarian_v2_combat',
     'archer_actions',
     'dragon',
     'merchant_movement',

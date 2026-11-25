@@ -8,8 +8,10 @@ import '../../../app/providers.dart';
 import '../../../core/game/game_engine.dart';
 import '../../../core/game/models.dart';
 import '../../../core/game/world_engine.dart';
+import '../../../game/atlas/anim_overrides.dart';
 import '../../../game/atlas/catalog.dart';
 import '../../../game/atlas/sprite_atlas.dart';
+import '../army/army_sheet.dart';
 import '../ow_style.dart';
 
 /// Tests turn the animation clock off so pumpAndSettle can finish.
@@ -29,7 +31,10 @@ class KingdomView {
         goblin = s.world.goblinLoot > 0,
         fortifications = s.streak.freezesHeld,
         restDay = WorldEngine.isRestDay(s, now),
-        workedToday = WorldEngine.workedOn(s, dateKeyOf(now));
+        workedToday = WorldEngine.workedOn(s, dateKeyOf(now)),
+        level = GameEngine.level(s),
+        barbarians = s.world.army['barbarian'] ?? 0,
+        archers = s.world.army['archer'] ?? 0;
 
   final int townHallStage;
   final int mineStage;
@@ -41,6 +46,9 @@ class KingdomView {
   final int fortifications;
   final bool restDay;
   final bool workedToday;
+  final int level;
+  final int barbarians;
+  final int archers;
 }
 
 class KingdomScreen extends ConsumerStatefulWidget {
@@ -128,6 +136,9 @@ class _KingdomScreenState extends ConsumerState<KingdomScreen>
         final s = ref.read(gameProvider);
         owToast(context,
             'قاعة المملكة تكبر مع مستواك (${GameEngine.level(s)})');
+      case 'barracks':
+      case 'camp':
+        showArmySheet(context);
       case 'builder':
         owToast(context, 'البنّاء يعمل في الأيام التي تنجز فيها');
       case 'knight':
@@ -138,11 +149,12 @@ class _KingdomScreenState extends ConsumerState<KingdomScreen>
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(gameProvider);
-    final now = ref.watch(clockProvider)();
+    final now = ref.watch(nowProvider)();
     final atlases =
         ref.watch(atlasSetProvider(Atlases.kingdom.join(','))).valueOrNull ??
             const <String, SpriteAtlas>{};
     final view = KingdomView(s, now);
+    final anims = ref.watch(animOverridesProvider);
     return LayoutBuilder(builder: (context, c) {
       _center(c.biggest);
       return Stack(children: [
@@ -161,7 +173,7 @@ class _KingdomScreenState extends ConsumerState<KingdomScreen>
             child: CustomPaint(
               key: const Key('kingdom_scene'),
               size: KingdomScreen.sceneSize,
-              painter: KingdomPainter(atlases, view, _t, _hits),
+              painter: KingdomPainter(atlases, view, _t, _hits, anims),
             ),
           ),
         ),
@@ -207,12 +219,16 @@ class _MissingAssets extends StatelessWidget {
 }
 
 class KingdomPainter extends CustomPainter {
-  KingdomPainter(this.a, this.v, this.t, this.hits);
+  KingdomPainter(this.a, this.v, this.t, this.hits, this.anims);
 
   final Map<String, SpriteAtlas> a;
   final KingdomView v;
   final double t;
   final Map<String, Rect> hits;
+  final Map<String, String> anims;
+
+  static const _barracks = Offset(1070, 700);
+  static const _camp = Offset(880, 760);
 
   static const _th = Offset(700, 470);
   static const _mine = Offset(470, 560);
@@ -234,13 +250,21 @@ class KingdomPainter extends CustomPainter {
       (_mine.dy, () => _goldMine(canvas)),
       (_tower.dy, () => _recordTower(canvas)),
       (_builder.dy, () => _unit(canvas, 'builder',
-          v.workedToday ? Catalog.builderWork : Catalog.builderIdle,
+          animFor(anims, v.workedToday ? 'builder.work' : 'builder.idle'),
           _builder, 1.7, 'builder')),
-      (_knight.dy, () => _unit(
-          canvas, 'knight', Catalog.knightIdle, _knight, 1.9, 'knight')),
+      (_knight.dy, () => _unit(canvas, 'knight', animFor(anims, 'knight.idle'),
+          _knight, 1.9, 'knight')),
+      (_barracks.dy, () => _building(canvas, 'army_barracks_spells_lab',
+          'barracks_wood', (v.level ~/ 6).clamp(0, 15), _barracks, 2.0,
+          'barracks', 'الثكنة')),
+      (_camp.dy - 30, () => _building(canvas, 'army_barracks_spells_lab',
+          'army_camp_tents',
+          ((v.barbarians + v.archers) ~/ 3).clamp(0, 15), _camp, 1.6,
+          'camp', 'المعسكر')),
+      for (final u in _soldiers()) (u.$2.dy, () => _soldier(canvas, u)),
       (_chest.dy, () => _dailyChest(canvas)),
       if (v.goblin)
-        (_goblin.dy, () => _unit(canvas, 'goblin', Catalog.goblinIdle,
+        (_goblin.dy, () => _unit(canvas, 'goblin', animFor(anims, 'goblin.idle'),
             _goblin + Offset(sin(t * 2) * 12, 0), 1.6, 'goblin')),
     ]..sort((x, y) => x.$1.compareTo(y.$1));
     for (final i in items) {
@@ -358,6 +382,47 @@ class KingdomPainter extends CustomPainter {
     }
     final r = b.draw(canvas, f, at, scale: scale);
     if (r != null) hits[hit] = r;
+  }
+
+  void _building(Canvas canvas, String atlas, String group, int frame,
+      Offset at, double scale, String hit, String label) {
+    final b = a[atlas];
+    final g = b?.group(group) ?? const <String>[];
+    if (b == null || g.isEmpty) {
+      _placeholder(canvas, at, const Size(90, 90), label, hit);
+      return;
+    }
+    final r = b.draw(canvas, g[frame.clamp(0, g.length - 1)], at, scale: scale);
+    if (r != null) hits[hit] = r;
+  }
+
+  /// Up to 12 soldiers strolling around the camp: (kind, position, flip).
+  List<(String, Offset, bool)> _soldiers() {
+    final out = <(String, Offset, bool)>[];
+    final kinds = [
+      for (var i = 0; i < v.barbarians && i < 8; i++) 'barbarian',
+      for (var i = 0; i < v.archers && i < 6; i++) 'archer',
+    ].take(12).toList();
+    for (var i = 0; i < kinds.length; i++) {
+      final phase = i * 1.7;
+      final x = sin(t * 0.35 + phase) * 110;
+      final y = cos(t * 0.23 + phase * 1.3) * 45;
+      final dx = cos(t * 0.35 + phase); // direction of travel in x
+      out.add((kinds[i], _camp + Offset(x - 40, y + 70), dx < 0));
+    }
+    return out;
+  }
+
+  void _soldier(Canvas canvas, (String, Offset, bool) u) {
+    final atlas = u.$1 == 'barbarian' ? 'barbarian_v2_idle_move' : 'archer_actions';
+    final b = a[atlas];
+    final f = b?.animFrame(animFor(anims, '${u.$1}.walk'), t, fps: 7);
+    if (b == null || f == null) {
+      canvas.drawCircle(u.$2 - const Offset(0, 14), 10,
+          Paint()..color = u.$1 == 'barbarian' ? Colors.orange : Colors.teal);
+      return;
+    }
+    b.draw(canvas, f, u.$2, scale: 1.4, flipX: u.$3);
   }
 
   void _walls(Canvas canvas) {

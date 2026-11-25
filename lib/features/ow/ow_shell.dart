@@ -7,6 +7,7 @@ import '../../core/game/xp_curve.dart';
 import 'diwan/diwan_screen.dart';
 import 'kingdom/kingdom_screen.dart';
 import 'ow_style.dart';
+import 'sandbox/sandbox_panel.dart';
 import 'tasks/tasks_screen.dart';
 import 'world/world_screen.dart';
 
@@ -26,6 +27,7 @@ class OwShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tab = ref.watch(shellTabProvider);
+    final sandbox = ref.watch(sandboxModeProvider);
     return Scaffold(
       body: Stack(children: [
         Positioned.fill(
@@ -37,6 +39,33 @@ class OwShell extends ConsumerWidget {
           ]),
         ),
         const Positioned(top: 0, left: 0, right: 0, child: OwHud()),
+        if (sandbox)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 112,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: GestureDetector(
+                key: const Key('sandbox_badge'),
+                onTap: () => showSandboxPanel(context),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Ow.danger,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.black54),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.science, size: 16, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text('وضع التجربة · المس للأدوات',
+                        style: Ow.body(12, color: Colors.white)),
+                  ]),
+                ),
+              ),
+            ),
+          ),
       ]),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
@@ -80,7 +109,7 @@ class OwHud extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(gameProvider);
-    final now = ref.watch(clockProvider)();
+    final now = ref.watch(nowProvider)();
     final level = GameEngine.level(s);
     final rank = GameEngine.rank(s);
     final (into, need) = XpCurve.progress(s.totalXp);

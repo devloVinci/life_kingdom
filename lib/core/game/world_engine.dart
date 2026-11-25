@@ -468,3 +468,136 @@ class WorldEngine {
   static bool isRestDay(GameState s, DateTime now) =>
       s.streak.freezeDates.contains(dateKeyOf(now));
 }
+
+// ---------------------------------------------------------------------------
+// Army and landmarks (v0.2)
+
+class UnitDef {
+  const UnitDef(this.id, this.name, this.gold, this.supplies, this.power);
+  final String id;
+  final String name;
+  final int gold;
+  final int supplies;
+  final int power;
+}
+
+class Landmark {
+  const Landmark(this.id, this.gx, this.gy, this.group, this.variant);
+  final String id;
+
+  /// Tile offset from the castle (0,0 is the castle).
+  final double gx;
+  final double gy;
+
+  /// Index into Catalog.landmarkGroups, and frame variant.
+  final int group;
+  final int variant;
+
+  double get distance => sqrt(gx * gx + gy * gy);
+  int get supplyCost => 10 + (distance * 6).round();
+  int get powerNeeded => (distance * 2.5).round();
+  int get goldReward => 40 + (distance * 20).round();
+  int get gemReward => distance >= 6 ? 1 + distance ~/ 4 : 0;
+}
+
+enum TrainStatus { ok, noGold, noSupplies, campFull, unknown }
+
+enum CaptureStatus { ok, notRevealed, already, noSupplies, tooWeak, unknown }
+
+class ArmyEngine {
+  ArmyEngine._();
+
+  /// Few characters on purpose (v0.2): warrior and archer, plus the hero.
+  static const units = [
+    UnitDef('barbarian', 'محارب', 30, 5, 1),
+    UnitDef('archer', 'رامية', 60, 10, 2),
+  ];
+
+  static UnitDef? unit(String id) {
+    for (final u in units) {
+      if (u.id == id) return u;
+    }
+    return null;
+  }
+
+  static int campCapacity(int level) => min(40, 8 + level ~/ 2);
+
+  static int armySize(GameState s) =>
+      s.world.army.values.fold(0, (a, b) => a + b);
+
+  static int heroPower(int level) => 5 + level ~/ 5;
+
+  static int armyPower(GameState s) {
+    var p = heroPower(GameEngine.level(s));
+    s.world.army.forEach((id, n) => p += (unit(id)?.power ?? 0) * n);
+    return p;
+  }
+
+  static (GameState, TrainStatus) train(GameState s, String id, int count) {
+    final u = unit(id);
+    if (u == null || count <= 0) return (s, TrainStatus.unknown);
+    if (armySize(s) + count > campCapacity(GameEngine.level(s))) {
+      return (s, TrainStatus.campFull);
+    }
+    if (s.gold < u.gold * count) return (s, TrainStatus.noGold);
+    if (s.world.supplies < u.supplies * count) {
+      return (s, TrainStatus.noSupplies);
+    }
+    final army = {...s.world.army, id: (s.world.army[id] ?? 0) + count};
+    return (
+      s.copyWith(
+        gold: s.gold - u.gold * count,
+        world: s.world.copyWith(
+            supplies: s.world.supplies - u.supplies * count, army: army),
+      ),
+      TrainStatus.ok
+    );
+  }
+
+  /// Fixed landmarks around the castle (same for every player).
+  static final List<Landmark> landmarks = _buildLandmarks();
+
+  static List<Landmark> _buildLandmarks() {
+    final r = Random(21);
+    final out = <Landmark>[];
+    for (var i = 0; i < 18; i++) {
+      final ang = r.nextDouble() * pi * 2;
+      final dist = 2.6 + i * 0.7;
+      out.add(Landmark('lm$i', cos(ang) * dist, sin(ang) * dist, i % 6,
+          r.nextInt(1000)));
+    }
+    return out;
+  }
+
+  static Landmark? landmark(String id) {
+    for (final l in landmarks) {
+      if (l.id == id) return l;
+    }
+    return null;
+  }
+
+  static bool revealed(Landmark l, int level) =>
+      l.distance <= WorldEngine.worldRadius(level);
+
+  static (GameState, CaptureStatus) capture(GameState s, String id) {
+    final l = landmark(id);
+    if (l == null) return (s, CaptureStatus.unknown);
+    if (s.world.captured.contains(id)) return (s, CaptureStatus.already);
+    if (!revealed(l, GameEngine.level(s))) {
+      return (s, CaptureStatus.notRevealed);
+    }
+    if (armyPower(s) < l.powerNeeded) return (s, CaptureStatus.tooWeak);
+    if (s.world.supplies < l.supplyCost) return (s, CaptureStatus.noSupplies);
+    return (
+      s.copyWith(
+        gold: s.gold + l.goldReward,
+        gems: s.gems + l.gemReward,
+        world: s.world.copyWith(
+          supplies: s.world.supplies - l.supplyCost,
+          captured: {...s.world.captured, id},
+        ),
+      ),
+      CaptureStatus.ok
+    );
+  }
+}

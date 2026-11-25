@@ -17,6 +17,8 @@ Future<void> main() async {
   runApp(ProviderScope(
     overrides: [
       gameRepositoryProvider.overrideWithValue(repo),
+      sandboxRepositoryProvider
+          .overrideWithValue(SharedPrefsGameRepository(key: 'life_kingdom_sandbox')),
       initialGameStateProvider.overrideWithValue(state),
       notificationServiceProvider
           .overrideWithValue(createPlatformNotificationService()),

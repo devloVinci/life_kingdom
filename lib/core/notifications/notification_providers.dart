@@ -16,6 +16,7 @@ final notificationSyncProvider = Provider<void>((ref) {
 
   Future<void> sync() async {
     if (!service.supported) return;
+    if (ref.read(sandboxModeProvider)) return; // never schedule test data
     try {
       await service.replaceAll(
           NotificationPlanner.plan(ref.read(gameProvider), clock()));

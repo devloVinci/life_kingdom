@@ -1,16 +1,21 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/game/game_engine.dart';
 import '../../../core/game/world_engine.dart';
+import '../../../game/atlas/anim_overrides.dart';
 import '../../../game/atlas/catalog.dart';
 import '../../../game/atlas/sprite_atlas.dart';
+import '../army/army_sheet.dart';
+import '../kingdom/kingdom_screen.dart';
 import '../ow_style.dart';
 
-/// The open world: black beyond what your level has revealed.
+/// The open world: black beyond what your level has revealed. Landmarks
+/// inside the light can be taken by marching the army (costs supplies).
 class WorldScreen extends ConsumerStatefulWidget {
   const WorldScreen({super.key});
 
@@ -18,16 +23,54 @@ class WorldScreen extends ConsumerStatefulWidget {
   static int get side => WorldConfig.worldHalfSize * 2 + 1;
   static Size get sceneSize => Size(side * tile, side * tile);
 
+  /// Scene position of a tile offset from the castle (feet of a sprite).
+  static Offset at(double gx, double gy) {
+    final n = WorldConfig.worldHalfSize;
+    return Offset((n + gx) * tile + tile / 2, (n + gy) * tile + tile);
+  }
+
   @override
   ConsumerState<WorldScreen> createState() => _WorldScreenState();
 }
 
-class _WorldScreenState extends ConsumerState<WorldScreen> {
+class _March {
+  _March(this.target, this.start);
+  final Landmark target;
+  final double start;
+  static const seconds = 3.5;
+}
+
+class _WorldScreenState extends ConsumerState<WorldScreen>
+    with SingleTickerProviderStateMixin {
   final _tc = TransformationController();
   bool _centered = false;
+  Ticker? _ticker;
+  double _t = 0;
+  _March? _march;
+
+  @override
+  void initState() {
+    super.initState();
+    if (SceneClock.enabled) {
+      _ticker = createTicker((d) {
+        if (!mounted) return;
+        final t = d.inMicroseconds / 1e6;
+        if (_march != null && t - _march!.start > _March.seconds + 0.6) {
+          setState(() {
+            _t = t;
+            _march = null;
+          });
+        } else {
+          setState(() => _t = t);
+        }
+      })
+        ..start();
+    }
+  }
 
   @override
   void dispose() {
+    _ticker?.dispose();
     _tc.dispose();
     super.dispose();
   }
@@ -44,11 +87,109 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
       ..scale(scale);
   }
 
+  void _onTap(Offset p) {
+    final s = ref.read(gameProvider);
+    final level = GameEngine.level(s);
+    Landmark? best;
+    var bestD = 70.0;
+    for (final l in ArmyEngine.landmarks) {
+      if (!ArmyEngine.revealed(l, level)) continue;
+      final d = (WorldScreen.at(l.gx, l.gy) - const Offset(0, 40) - p).distance;
+      if (d < bestD) {
+        bestD = d;
+        best = l;
+      }
+    }
+    if (best != null) _showLandmark(best);
+  }
+
+  void _showLandmark(Landmark l) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Ow.panel,
+      builder: (c) => Consumer(builder: (c, ref, _) {
+        final s = ref.watch(gameProvider);
+        final taken = s.world.captured.contains(l.id);
+        final power = ArmyEngine.armyPower(s);
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_landmarkName(l), style: Ow.title(20, color: Ow.gold)),
+              const SizedBox(height: 6),
+              if (taken)
+                Text('رايتك ترفرف هنا.', style: Ow.body(14, color: Ow.supply))
+              else ...[
+                Text(
+                    'يحتاج قوة ${l.powerNeeded} (قوتك $power) '
+                    'و${l.supplyCost} إمدادات (لديك ${s.world.supplies})',
+                    style: Ow.body(14)),
+                Text(
+                    'الغنيمة: ${l.goldReward} ذهب'
+                    '${l.gemReward > 0 ? ' و${l.gemReward} جواهر' : ''}',
+                    style: Ow.body(13, color: Ow.muted)),
+                const SizedBox(height: 12),
+                Row(children: [
+                  OwButton(
+                    key: const Key('march'),
+                    label: 'سيّر الجيش',
+                    icon: Icons.flag,
+                    onPressed: () {
+                      final st = ref.read(gameProvider.notifier).capture(l.id);
+                      Navigator.pop(c);
+                      if (st == CaptureStatus.ok) {
+                        setState(() => _march = _March(l, _t));
+                        owToast(context,
+                            'سار الجيش: +${l.goldReward} ذهب${l.gemReward > 0 ? ' +${l.gemReward} جواهر' : ''}');
+                      } else {
+                        owToast(
+                            context,
+                            switch (st) {
+                              CaptureStatus.tooWeak =>
+                                'الجيش أضعف من هذا المكان. درّب جنوداً في الثكنة.',
+                              CaptureStatus.noSupplies =>
+                                'لا تكفي الإمدادات. أنجز مهامك لتجمعها.',
+                              _ => 'تعذّر المسير',
+                            });
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  OwButton(
+                    label: 'الثكنة',
+                    color: Ow.panelHi,
+                    onPressed: () {
+                      Navigator.pop(c);
+                      showArmySheet(context);
+                    },
+                  ),
+                ]),
+              ],
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  static const _groupNames = [
+    'برج مراقبة',
+    'أطلال قديمة',
+    'معسكر استراحة',
+    'موقع تعدين',
+    'مقابر مهجورة',
+    'محجر',
+  ];
+  String _landmarkName(Landmark l) => _groupNames[l.group % _groupNames.length];
+
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(gameProvider);
     final level = GameEngine.level(s);
     final radius = WorldEngine.worldRadius(level);
+    final anims = ref.watch(animOverridesProvider);
     final atlases =
         ref.watch(atlasSetProvider(Atlases.world.join(','))).valueOrNull ??
             const <String, SpriteAtlas>{};
@@ -59,6 +200,10 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
     final nextLevel = nextRegion == null
         ? null
         : WorldEngine.levelForRadius(WorldConfig.regions[region].edge + 1.0);
+    final march = _march;
+    final marchT = march == null
+        ? null
+        : ((_t - march.start) / _March.seconds).clamp(0.0, 1.0);
 
     return LayoutBuilder(builder: (context, c) {
       _center(c.biggest, radius);
@@ -70,13 +215,25 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
           minScale: 0.15,
           maxScale: 3,
           boundaryMargin: const EdgeInsets.all(400),
-          child: RepaintBoundary(
-            child: CustomPaint(
-              key: const Key('world_scene'),
-              size: WorldScreen.sceneSize,
-              painter: WorldPainter(atlases, radius,
-                  WorldEngine.townHallStage(level)),
-            ),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapUp: (d) => _onTap(d.localPosition),
+            child: Stack(children: [
+              RepaintBoundary(
+                child: CustomPaint(
+                  key: const Key('world_scene'),
+                  size: WorldScreen.sceneSize,
+                  painter: WorldPainter(atlases, radius,
+                      WorldEngine.townHallStage(level), level,
+                      s.world.captured),
+                ),
+              ),
+              CustomPaint(
+                size: WorldScreen.sceneSize,
+                painter: _UnitsPainter(atlases, anims, _t, s.world.army,
+                    march?.target, marchT),
+              ),
+            ]),
           ),
         ),
         Positioned(
@@ -88,14 +245,21 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('أنت في: ${WorldConfig.regions[region].name}',
-                    style: Ow.title(17, color: Ow.gold)),
+                Row(children: [
+                  Expanded(
+                    child: Text('أنت في: ${WorldConfig.regions[region].name}',
+                        style: Ow.title(17, color: Ow.gold)),
+                  ),
+                  Text('قوة ${ArmyEngine.armyPower(s)} · '
+                      'إمدادات ${s.world.supplies}',
+                      style: Ow.body(12, color: Ow.muted)),
+                ]),
                 const SizedBox(height: 4),
                 Text(
                   nextRegion == null
                       ? 'انكشف لك العالم كله.'
-                      : 'تنكشف الأرض حولك كلما ارتفع مستواك. '
-                          '${nextRegion.name} يبدأ بالظهور عند المستوى $nextLevel.',
+                      : 'المس مَعلماً لتسيّر إليه الجيش. '
+                          '${nextRegion.name} يظهر عند المستوى $nextLevel.',
                   style: Ow.body(13, color: Ow.muted),
                 ),
               ],
@@ -108,11 +272,14 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
 }
 
 class WorldPainter extends CustomPainter {
-  WorldPainter(this.a, this.radius, this.townHallStage);
+  WorldPainter(
+      this.a, this.radius, this.townHallStage, this.level, this.captured);
 
   final Map<String, SpriteAtlas> a;
   final double radius;
   final int townHallStage;
+  final int level;
+  final Set<String> captured;
 
   static const _groundAtlas = [
     'grass_dirt_mud',
@@ -138,7 +305,11 @@ class WorldPainter extends CustomPainter {
     const tile = WorldScreen.tile;
     final n = WorldConfig.worldHalfSize;
     final rnd = Random(3);
-    final props = <(Offset, int, double)>[]; // position, region, roll
+    final props = <(Offset, int, double)>[];
+
+    // Tiles near a landmark stay clear of trees.
+    bool nearLandmark(int gx, int gy) => ArmyEngine.landmarks
+        .any((l) => (l.gx - gx).abs() < 1.2 && (l.gy - gy).abs() < 1.2);
 
     for (var gy = -n; gy <= n; gy++) {
       for (var gx = -n; gx <= n; gx++) {
@@ -148,7 +319,8 @@ class WorldPainter extends CustomPainter {
         if (d > radius + 1) continue;
         final fade = d <= radius ? 1.0 : (radius + 1 - d).clamp(0.0, 1.0) * 0.5;
         final region = WorldEngine.regionIndexAt(d);
-        final center = Offset((gx + n) * tile + tile / 2, (gy + n) * tile + tile / 2);
+        final center =
+            Offset((gx + n) * tile + tile / 2, (gy + n) * tile + tile / 2);
         final atlas = a[_groundAtlas[region]];
         final frames = atlas?.group(_groundGroup[region]) ?? const <String>[];
         if (atlas == null || frames.isEmpty) {
@@ -159,14 +331,14 @@ class WorldPainter extends CustomPainter {
           atlas.draw(canvas, frames[variant % frames.length], center,
               opacity: fade);
         }
-        if (d <= radius && d > 1.5 && roll < 0.16) {
+        if (d <= radius && d > 1.5 && roll < 0.14 && !nearLandmark(gx, gy)) {
           props.add((center + const Offset(0, tile / 2), region, roll));
         }
       }
     }
 
-    // Nature props, y-sorted.
-    props.sort((x, y) => x.$1.dy.compareTo(y.$1.dy));
+    // Nature + landmarks, y-sorted together.
+    final drawables = <(double, void Function())>[];
     final f = a['flora_rocks_resources'];
     if (f != null) {
       final decid = f.group(Catalog.treeGroups[0]);
@@ -179,41 +351,62 @@ class WorldPainter extends CustomPainter {
           _ => rocks,
         };
         if (list.isEmpty) continue;
-        f.draw(canvas, list[(p.$3 * 1000).floor() % list.length], p.$1,
-            scale: 1.3);
+        drawables.add((
+          p.$1.dy,
+          () => f.draw(canvas, list[(p.$3 * 1000).floor() % list.length],
+              p.$1, scale: 1.3)
+        ));
       }
     }
 
-    // Landmarks on fixed spots, shown once revealed.
     final l = a['landmarks_pois'];
-    if (l != null) {
-      final r2 = Random(21);
-      for (var i = 0; i < 14; i++) {
-        final ang = r2.nextDouble() * pi * 2;
-        final dist = 2.5 + i * 0.9;
-        if (dist > radius) continue;
-        final g = l.group(Catalog.landmarkGroups[i % Catalog.landmarkGroups.length]);
-        if (g.isEmpty) continue;
-        final at = Offset((n + cos(ang) * dist) * tile + tile / 2,
-            (n + sin(ang) * dist) * tile + tile);
-        l.draw(canvas, g[r2.nextInt(g.length)], at, scale: 1.6);
-      }
+    final scars = a['battlefield_scars'];
+    for (final lm in ArmyEngine.landmarks) {
+      if (!ArmyEngine.revealed(lm, level)) continue;
+      final at = WorldScreen.at(lm.gx, lm.gy);
+      drawables.add((
+        at.dy,
+        () {
+          final g = l?.group(Catalog.landmarkGroups[lm.group]) ??
+              const <String>[];
+          if (l == null || g.isEmpty) {
+            canvas.drawCircle(at - const Offset(0, 30), 24,
+                Paint()..color = const Color(0xFF8A7A5A));
+          } else {
+            l.draw(canvas, g[lm.variant % g.length], at, scale: 1.6);
+          }
+          if (captured.contains(lm.id)) {
+            final b = scars?.group('conquest_banners') ?? const <String>[];
+            if (scars != null && b.isNotEmpty) {
+              scars.draw(canvas, b.first, at + const Offset(36, 6), scale: 1.2);
+            } else {
+              canvas.drawRect(Rect.fromLTWH(at.dx + 30, at.dy - 50, 18, 12),
+                  Paint()..color = const Color(0xFFF5C542));
+            }
+          }
+        }
+      ));
     }
 
-    // The castle and the hero at the centre.
-    final c = Offset(n * tile + tile / 2, n * tile + tile);
-    final th = a['storages_townhall_builder'];
-    final thFrame = th == null ? null : Catalog.townHall(th, townHallStage);
-    if (th != null && thFrame != null) {
-      th.draw(canvas, thFrame, c, scale: 2.0);
-    } else {
-      canvas.drawCircle(c - const Offset(0, 40), 40,
-          Paint()..color = const Color(0xFFB8862B));
-    }
-    final k = a['knight'];
-    final kf = k?.anim(Catalog.knightIdle);
-    if (k != null && kf != null && kf.isNotEmpty) {
-      k.draw(canvas, kf.first, c + const Offset(70, 40), scale: 1.5);
+    // The castle at the centre.
+    final c = WorldScreen.at(0, 0);
+    drawables.add((
+      c.dy,
+      () {
+        final th = a['storages_townhall_builder'];
+        final thFrame = th == null ? null : Catalog.townHall(th, townHallStage);
+        if (th != null && thFrame != null) {
+          th.draw(canvas, thFrame, c, scale: 2.0);
+        } else {
+          canvas.drawCircle(c - const Offset(0, 40), 40,
+              Paint()..color = const Color(0xFFB8862B));
+        }
+      }
+    ));
+
+    drawables.sort((x, y) => x.$1.compareTo(y.$1));
+    for (final d in drawables) {
+      d.$2();
     }
   }
 
@@ -221,5 +414,59 @@ class WorldPainter extends CustomPainter {
   bool shouldRepaint(WorldPainter old) =>
       old.radius != radius ||
       old.a.length != a.length ||
-      old.townHallStage != townHallStage;
+      old.townHallStage != townHallStage ||
+      old.captured.length != captured.length;
+}
+
+/// Hero and army: idle beside the castle, or marching to a landmark.
+class _UnitsPainter extends CustomPainter {
+  _UnitsPainter(this.a, this.anims, this.t, this.army, this.target, this.p);
+
+  final Map<String, SpriteAtlas> a;
+  final Map<String, String> anims;
+  final double t;
+  final Map<String, int> army;
+  final Landmark? target;
+  final double? p;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final home = WorldScreen.at(0.9, 0.5);
+    final marching = target != null && p != null;
+    final dest = marching ? WorldScreen.at(target!.gx - 0.6, target!.gy + 0.3) : home;
+    final pos = marching ? Offset.lerp(home, dest, p!)! : home;
+    final flip = marching && dest.dx < home.dx;
+
+    final party = <String>[
+      'knight',
+      for (var i = 0; i < (army['barbarian'] ?? 0) && i < 4; i++) 'barbarian',
+      for (var i = 0; i < (army['archer'] ?? 0) && i < 3; i++) 'archer',
+    ];
+    final items = <(Offset, String)>[];
+    for (var i = 0; i < party.length; i++) {
+      final row = i ~/ 3, col = i % 3;
+      items.add((pos + Offset(col * 26.0 - 26 + row * 8, row * 18.0), party[i]));
+    }
+    items.sort((x, y) => x.$1.dy.compareTo(y.$1.dy));
+    for (final it in items) {
+      final (atlas, slot) = switch (it.$2) {
+        'knight' => ('knight', 'knight'),
+        'barbarian' => ('barbarian_v2_idle_move', 'barbarian'),
+        _ => ('archer_actions', 'archer'),
+      };
+      final b = a[atlas];
+      final f = b?.animFrame(
+          animFor(anims, '$slot.${marching && p! < 1 ? 'walk' : 'idle'}'), t,
+          fps: 7);
+      if (b == null || f == null) {
+        canvas.drawCircle(it.$1 - const Offset(0, 12), 9,
+            Paint()..color = it.$2 == 'knight' ? Colors.white : Colors.orange);
+        continue;
+      }
+      b.draw(canvas, f, it.$1, scale: it.$2 == 'knight' ? 1.5 : 1.25, flipX: flip);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_UnitsPainter old) => true;
 }

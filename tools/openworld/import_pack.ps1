@@ -36,6 +36,7 @@ $sheets = [ordered]@{
   "scout_reporter" = "06_Units\scout_reporter\scout_reporter"
   "royal_herald_mounted" = "06_Units\royal_herald_mounted\royal_herald_mounted"
   "barbarian_v2_idle_move" = "06_Units\barbarian_v2\barbarian_v2_idle_move"
+  "barbarian_v2_combat" = "06_Units\barbarian_v2\barbarian_v2_combat"
   "archer_actions" = "06_Units\archer\archer_actions"
   "dragon" = "06_Units\dragon\dragon"
   "merchant_movement" = "06_Units\wandering_merchant\merchant_movement"

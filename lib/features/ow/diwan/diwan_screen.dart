@@ -7,6 +7,7 @@ import '../../../core/game/game_engine.dart';
 import '../../../core/game/models.dart';
 import '../../../core/game/world_engine.dart';
 import '../ow_style.dart';
+import '../sandbox/sandbox_panel.dart';
 
 const _tierNames = ['خشبي', 'حديدي', 'ذهبي', 'ملكي'];
 
@@ -17,7 +18,7 @@ class DiwanScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(gameProvider);
-    final now = ref.watch(clockProvider)();
+    final now = ref.watch(nowProvider)();
     final game = ref.read(gameProvider.notifier);
     final chest = WorldEngine.pendingChest(s, now);
     final report = WorldEngine.pendingReport(s, now);
@@ -196,6 +197,8 @@ class DiwanScreen extends ConsumerWidget {
                 () => context.push('/calendar')),
             _Link('الإعدادات والإشعارات والنسخ الاحتياطي', Icons.settings,
                 () => context.push('/settings')),
+            _Link('وضع التجربة (sandbox)', Icons.science,
+                () => showSandboxPanel(context)),
             _Link('معرض الأست', Icons.grid_view,
                 () => context.push('/gallery')),
           ]),

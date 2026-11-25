@@ -21,20 +21,39 @@ final initialGameStateProvider =
 /// Injectable clock (tests override it).
 final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
+/// Sandbox save (separate from the real one). Overridden in main().
+final sandboxRepositoryProvider =
+    Provider<GameRepository>((ref) => InMemoryGameRepository());
+
+/// True while the sandbox (try-anything mode) is active.
+final sandboxModeProvider = StateProvider<bool>((ref) => false);
+
+/// Days the sandbox has jumped forward (always 0 outside the sandbox).
+final sandboxDaysProvider = StateProvider<int>((ref) => 0);
+
+/// The game's "now": the real clock plus the sandbox time jump.
+final nowProvider = Provider<DateTime Function()>((ref) {
+  final clock = ref.watch(clockProvider);
+  final days = ref.watch(sandboxDaysProvider);
+  return () => clock().add(Duration(days: days));
+});
+
 final gameProvider =
     NotifierProvider<GameController, GameState>(GameController.new);
 
 class GameController extends Notifier<GameState> {
   @override
   GameState build() {
-    final now = ref.read(clockProvider)();
+    final now = ref.read(nowProvider)();
     return WorldEngine.settle(
         EconomyEngine.settleBuildings(
             GameEngine.rollover(ref.read(initialGameStateProvider), now)),
         now);
   }
 
-  DateTime get _now => ref.read(clockProvider)();
+  DateTime get _now => ref.read(nowProvider)();
+
+  bool get _sandbox => ref.read(sandboxModeProvider);
 
   final List<AchievementDef> _unlocked = [];
 
@@ -43,7 +62,8 @@ class GameController extends Notifier<GameState> {
     final r = AchievementEngine.evaluate(s, _now);
     _unlocked.addAll(r.unlocked);
     state = r.state;
-    ref.read(gameRepositoryProvider).save(r.state);
+    (_sandbox ? ref.read(sandboxRepositoryProvider) : ref.read(gameRepositoryProvider))
+        .save(r.state);
   }
 
   /// Achievements unlocked since the last call (for a snackbar).
@@ -124,6 +144,62 @@ class GameController extends Notifier<GameState> {
     final (s, r) = WorldEngine.claimReport(state, _now);
     if (r != null) _set(s);
     return r;
+  }
+
+  TrainStatus train(String unitId, int count) {
+    final (s, st) = ArmyEngine.train(state, unitId, count);
+    if (st == TrainStatus.ok) _set(s);
+    return st;
+  }
+
+  CaptureStatus capture(String landmarkId) {
+    final (s, st) = ArmyEngine.capture(state, landmarkId);
+    if (st == CaptureStatus.ok) _set(s);
+    return st;
+  }
+
+  // ---- Sandbox (a separate save to try anything) ----
+
+  /// Enters the sandbox. [fresh] starts empty, [copyReal] copies the real
+  /// progress, otherwise the last sandbox save is resumed.
+  Future<void> enterSandbox({bool fresh = false, bool copyReal = false}) async {
+    final real =
+        _sandbox ? await ref.read(gameRepositoryProvider).load() : state;
+    final box = ref.read(sandboxRepositoryProvider);
+    var s = fresh
+        ? const GameState(playerName: 'تجربة')
+        : copyReal
+            ? real
+            : await box.load();
+    if (!fresh && !copyReal && s.totalXp == 0 && s.habits.isEmpty &&
+        s.tasks.isEmpty) {
+      s = real; // first visit: start from a copy of the real progress
+    }
+    if (!_sandbox) {
+      ref.read(sandboxDaysProvider.notifier).state = 0;
+      ref.read(sandboxModeProvider.notifier).state = true;
+    }
+    _set(s);
+  }
+
+  Future<void> exitSandbox() async {
+    if (!_sandbox) return;
+    ref.read(sandboxModeProvider.notifier).state = false;
+    ref.read(sandboxDaysProvider.notifier).state = 0;
+    final real = await ref.read(gameRepositoryProvider).load();
+    state = WorldEngine.settle(real, _now);
+  }
+
+  /// Any change at all, sandbox only.
+  void sandboxEdit(GameState Function(GameState s) change) {
+    if (!_sandbox) return;
+    _set(change(state));
+  }
+
+  void sandboxJumpDays(int days) {
+    if (!_sandbox) return;
+    ref.read(sandboxDaysProvider.notifier).state += days;
+    _set(state);
   }
 
   RestStatus declareRest() {

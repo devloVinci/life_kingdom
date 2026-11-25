@@ -22,7 +22,7 @@ class TasksScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(gameProvider);
-    final now = ref.watch(clockProvider)();
+    final now = ref.watch(nowProvider)();
     final today = dateKeyOf(now);
     final habits =
         s.habits.where((h) => !h.archived && h.isDueOn(now)).toList();

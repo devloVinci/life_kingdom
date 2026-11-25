@@ -19,6 +19,8 @@ class WorldState {
     this.fortifyAwardKeys = const {},
     this.bestWeek = 0,
     this.bestWeekKey,
+    this.army = const {},
+    this.captured = const {},
   });
 
   /// Fuel for the open world (marches, bosses, freeing villages).
@@ -58,6 +60,12 @@ class WorldState {
   final int bestWeek;
   final String? bestWeekKey;
 
+  /// Trained units: unit id -> count.
+  final Map<String, int> army;
+
+  /// Landmark ids taken on the world map.
+  final Set<String> captured;
+
   WorldState copyWith({
     int? supplies,
     String? suppliesDayKey,
@@ -75,6 +83,8 @@ class WorldState {
     Set<String>? fortifyAwardKeys,
     int? bestWeek,
     String? bestWeekKey,
+    Map<String, int>? army,
+    Set<String>? captured,
   }) =>
       WorldState(
         supplies: supplies ?? this.supplies,
@@ -92,6 +102,8 @@ class WorldState {
         fortifyAwardKeys: fortifyAwardKeys ?? this.fortifyAwardKeys,
         bestWeek: bestWeek ?? this.bestWeek,
         bestWeekKey: bestWeekKey ?? this.bestWeekKey,
+        army: army ?? this.army,
+        captured: captured ?? this.captured,
       );
 
   Map<String, dynamic> toJson() => {
@@ -110,6 +122,8 @@ class WorldState {
         'fortifyAwardKeys': (fortifyAwardKeys.toList()..sort()),
         'bestWeek': bestWeek,
         if (bestWeekKey != null) 'bestWeekKey': bestWeekKey,
+        'army': army,
+        'captured': (captured.toList()..sort()),
       };
 
   factory WorldState.fromJson(Map<String, dynamic> j) => WorldState(
@@ -131,5 +145,8 @@ class WorldState {
             .toSet(),
         bestWeek: (j['bestWeek'] as int?) ?? 0,
         bestWeekKey: j['bestWeekKey'] as String?,
+        army: Map<String, int>.from((j['army'] as Map?) ?? const {}),
+        captured:
+            ((j['captured'] as List?) ?? const []).cast<String>().toSet(),
       );
 }

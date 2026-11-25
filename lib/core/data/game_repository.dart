@@ -17,7 +17,9 @@ abstract class GameRepository {
 }
 
 class SharedPrefsGameRepository implements GameRepository {
-  static const _key = 'life_kingdom_state_v1';
+  SharedPrefsGameRepository({String key = 'life_kingdom_state_v1'}) : _key = key;
+
+  final String _key;
 
   @override
   Future<GameState> load() async {
