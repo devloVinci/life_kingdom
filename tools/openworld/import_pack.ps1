@@ -67,5 +67,10 @@ foreach ($id in $sheets.Keys) {
   Copy-Item -LiteralPath $png -Destination (Join-Path $out "$id.png") -Force
   $ok++
 }
+$anims = Join-Path $Pack "character_animations.json"
+if (Test-Path -LiteralPath $anims) {
+  Copy-Item -LiteralPath $anims -Destination (Join-Path $out "characters.json") -Force
+  Write-Host "Copied character_animations.json"
+} else { Write-Warning "character_animations.json not found" }
 Write-Host "Imported $ok atlases into $out"
 if ($missing.Count -gt 0) { Write-Warning ("Missing: " + ($missing -join ", ")) }

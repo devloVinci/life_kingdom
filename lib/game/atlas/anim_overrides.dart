@@ -1,26 +1,34 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// The few characters used in v0.2 and their animation slots.
+import 'character_anims.dart';
+import 'sprite_atlas.dart';
+
+/// The few characters used in the app and their animation slots. Names
+/// come from the pack's character_animations.json.
 class CharacterSlots {
   CharacterSlots._();
 
-  /// slot key -> (atlas id, default animation, label)
-  static const slots = <String, (String, String, String)>{
-    'knight.idle': ('knight', 'knight_set01_r1', 'الفارس · وقوف'),
-    'knight.walk': ('knight', 'knight_set02_r3', 'الفارس · مشي'),
-    'barbarian.idle':
-        ('barbarian_v2_idle_move', 'barbarian_v2_idle_move_set01_r1', 'المحارب · وقوف'),
-    'barbarian.walk':
-        ('barbarian_v2_idle_move', 'barbarian_v2_idle_move_set03_r3', 'المحارب · مشي'),
-    'archer.idle': ('archer_actions', 'archer_set01_r1', 'الرامية · وقوف'),
-    'archer.walk': ('archer_actions', 'archer_set02_r3', 'الرامية · مشي'),
-    'builder.work': ('builder', 'building_r1', 'البنّاء · عمل'),
-    'builder.idle': ('builder', 'idle_r1', 'البنّاء · وقوف'),
-    'goblin.idle': ('goblin', 'goblin_idle_r1', 'الغول · وقوف'),
+  /// slot -> (character, default animation, label, still frame)
+  static const slots = <String, (String, String, String, bool)>{
+    'knight.idle': ('knight', 'idle', 'الفارس · وقوف', false),
+    // The knight sheet has no walk: he marches with his idle loop.
+    'knight.walk': ('knight', 'idle', 'الفارس · مسير', false),
+    // barbarian_v2 has no idle: first frame of its walk stands still.
+    'barbarian.idle': ('barbarian_v2', 'walk', 'المحارب · وقوف', true),
+    'barbarian.walk': ('barbarian_v2', 'walk', 'المحارب · مشي', false),
+    'archer.idle': ('archer', 'idle', 'الرامية · وقوف', false),
+    'archer.walk': ('archer', 'walk', 'الرامية · مشي', false),
+    'builder.work': ('builder', 'build', 'البنّاء · عمل', false),
+    'builder.idle': ('builder', 'idle', 'البنّاء · وقوف', false),
+    'goblin.idle': ('goblin', 'idle', 'الغول · وقوف', false),
   };
+
+  static String character(String slot) => slots[slot]!.$1;
+  static bool still(String slot) => slots[slot]!.$4;
 }
 
 /// Chosen animation per slot (saved on the device, shared by real and
@@ -69,3 +77,31 @@ final animOverridesProvider =
 /// Animation name for a slot, with the user's choice applied.
 String animFor(Map<String, String> overrides, String slot) =>
     overrides[slot] ?? CharacterSlots.slots[slot]!.$2;
+
+/// Draws the animation chosen for [slot] (falls back to the default name if
+/// a saved choice no longer exists in the library).
+bool drawSlot(
+  Canvas canvas, {
+  required CharacterLibrary? lib,
+  required Map<String, SpriteAtlas> atlases,
+  required Map<String, String> overrides,
+  required String slot,
+  required String direction,
+  required Offset at,
+  required double t,
+  double scale = 1,
+}) {
+  final char = CharacterSlots.character(slot);
+  var anim = animFor(overrides, slot);
+  if (lib != null && !lib.has(char, anim)) anim = CharacterSlots.slots[slot]!.$2;
+  return drawCharacter(canvas,
+      lib: lib,
+      atlases: atlases,
+      character: char,
+      animation: anim,
+      direction: direction,
+      at: at,
+      t: t,
+      scale: scale,
+      still: CharacterSlots.still(slot) && overrides[slot] == null);
+}

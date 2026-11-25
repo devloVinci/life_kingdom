@@ -10,7 +10,7 @@ import '../../../core/game/models.dart';
 import '../../../core/game/world_engine.dart';
 import '../../../core/game/xp_curve.dart';
 import '../../../game/atlas/anim_overrides.dart';
-import '../../../game/atlas/sprite_atlas.dart';
+import '../../../game/atlas/character_anims.dart';
 import '../ow_style.dart';
 
 void showSandboxPanel(BuildContext context) => showModalBottomSheet(
@@ -198,7 +198,7 @@ class SandboxPanel extends ConsumerWidget {
           ]),
           _Section('حركات الشخصيات', [
             Text(
-                'اختر لكل شخصية الحركة الصحيحة من الحزمة. يُحفظ اختيارك ويُستعمل في الوضعين.',
+                'الأسماء من ملف character_animations.json. يُحفظ اختيارك ويُستعمل في الوضعين.',
                 style: Ow.body(12, color: Ow.muted)),
             const SizedBox(height: 6),
             for (final slot in CharacterSlots.slots.keys) _AnimPicker(slot),
@@ -262,12 +262,15 @@ class _AnimPicker extends ConsumerWidget {
   const _AnimPicker(this.slot);
   final String slot;
 
+  static const _cat = {'movement': 'حركة', 'combat': 'قتال', 'other': 'أخرى'};
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final (atlasId, _, label) = CharacterSlots.slots[slot]!;
-    final atlas = ref.watch(atlasProvider(atlasId)).valueOrNull;
+    final (character, _, label, _) = CharacterSlots.slots[slot]!;
+    final lib = ref.watch(characterLibraryProvider).valueOrNull;
     final current = animFor(ref.watch(animOverridesProvider), slot);
-    final names = atlas?.data.animations.keys.toList() ?? const <String>[];
+    final anims = lib?.animations(character) ?? const <AnimInfo>[];
+    final names = anims.map((a) => a.name).toList();
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(children: [
@@ -280,8 +283,10 @@ class _AnimPicker extends ConsumerWidget {
             dropdownColor: Ow.panelHi,
             style: Ow.body(12),
             items: [
-              for (final n in names)
-                DropdownMenuItem(value: n, child: Text(n)),
+              for (final a in anims)
+                DropdownMenuItem(
+                    value: a.name,
+                    child: Text('${a.name} · ${_cat[a.category] ?? a.category}')),
             ],
             onChanged: (v) {
               if (v != null) {

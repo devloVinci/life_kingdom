@@ -9,6 +9,7 @@ import '../../../core/game/game_engine.dart';
 import '../../../core/game/world_engine.dart';
 import '../../../game/atlas/anim_overrides.dart';
 import '../../../game/atlas/catalog.dart';
+import '../../../game/atlas/character_anims.dart';
 import '../../../game/atlas/sprite_atlas.dart';
 import '../army/army_sheet.dart';
 import '../kingdom/kingdom_screen.dart';
@@ -190,6 +191,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
     final level = GameEngine.level(s);
     final radius = WorldEngine.worldRadius(level);
     final anims = ref.watch(animOverridesProvider);
+    final lib = ref.watch(characterLibraryProvider).valueOrNull;
     final atlases =
         ref.watch(atlasSetProvider(Atlases.world.join(','))).valueOrNull ??
             const <String, SpriteAtlas>{};
@@ -230,7 +232,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
               ),
               CustomPaint(
                 size: WorldScreen.sceneSize,
-                painter: _UnitsPainter(atlases, anims, _t, s.world.army,
+                painter: _UnitsPainter(atlases, anims, lib, _t, s.world.army,
                     march?.target, marchT),
               ),
             ]),
@@ -420,10 +422,12 @@ class WorldPainter extends CustomPainter {
 
 /// Hero and army: idle beside the castle, or marching to a landmark.
 class _UnitsPainter extends CustomPainter {
-  _UnitsPainter(this.a, this.anims, this.t, this.army, this.target, this.p);
+  _UnitsPainter(
+      this.a, this.anims, this.lib, this.t, this.army, this.target, this.p);
 
   final Map<String, SpriteAtlas> a;
   final Map<String, String> anims;
+  final CharacterLibrary? lib;
   final double t;
   final Map<String, int> army;
   final Landmark? target;
@@ -435,7 +439,8 @@ class _UnitsPainter extends CustomPainter {
     final marching = target != null && p != null;
     final dest = marching ? WorldScreen.at(target!.gx - 0.6, target!.gy + 0.3) : home;
     final pos = marching ? Offset.lerp(home, dest, p!)! : home;
-    final flip = marching && dest.dx < home.dx;
+    final moving = marching && p! < 1;
+    final dir = moving ? facingOf(dest - home) : 'down';
 
     final party = <String>[
       'knight',
@@ -449,21 +454,19 @@ class _UnitsPainter extends CustomPainter {
     }
     items.sort((x, y) => x.$1.dy.compareTo(y.$1.dy));
     for (final it in items) {
-      final (atlas, slot) = switch (it.$2) {
-        'knight' => ('knight', 'knight'),
-        'barbarian' => ('barbarian_v2_idle_move', 'barbarian'),
-        _ => ('archer_actions', 'archer'),
-      };
-      final b = a[atlas];
-      final f = b?.animFrame(
-          animFor(anims, '$slot.${marching && p! < 1 ? 'walk' : 'idle'}'), t,
-          fps: 7);
-      if (b == null || f == null) {
+      final ok = drawSlot(canvas,
+          lib: lib,
+          atlases: a,
+          overrides: anims,
+          slot: '${it.$2}.${moving ? 'walk' : 'idle'}',
+          direction: dir,
+          at: it.$1,
+          t: t,
+          scale: it.$2 == 'knight' ? 1.5 : 1.25);
+      if (!ok) {
         canvas.drawCircle(it.$1 - const Offset(0, 12), 9,
             Paint()..color = it.$2 == 'knight' ? Colors.white : Colors.orange);
-        continue;
       }
-      b.draw(canvas, f, it.$1, scale: it.$2 == 'knight' ? 1.5 : 1.25, flipX: flip);
     }
   }
 
