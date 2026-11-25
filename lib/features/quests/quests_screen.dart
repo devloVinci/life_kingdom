@@ -147,20 +147,39 @@ class QuestBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppColors.palette;
+    final done = fraction >= 1;
     return Container(
-      height: 14,
+      height: p.chunky ? 14 : 10,
       decoration: BoxDecoration(
-        color: AppColors.panelDeep,
+        color: p.chunky
+            ? AppColors.panelDeep
+            : (p.isDark ? Colors.black.withValues(alpha: 0.35) : p.surfaceEdge.withValues(alpha: 0.6)),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.outline, width: 2),
+        border: p.chunky ? Border.all(color: AppColors.outline, width: 2) : null,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(p.chunky ? 6 : 8),
         child: Align(
           alignment: Alignment.centerLeft,
-          child: FractionallySizedBox(
-            widthFactor: fraction,
-            child: Container(color: AppColors.xp),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(end: fraction.clamp(0.0, 1.0)),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOutCubic,
+            builder: (_, v, __) => FractionallySizedBox(
+              widthFactor: v,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: p.chunky
+                      ? null
+                      : LinearGradient(
+                          colors: done
+                              ? [AppColors.success, Color.lerp(AppColors.success, Colors.white, 0.3)!]
+                              : const [Color(0xFF3E7BE8), Color(0xFF6FD3FF)]),
+                  color: p.chunky ? AppColors.xp : null,
+                ),
+              ),
+            ),
           ),
         ),
       ),
