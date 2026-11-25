@@ -16,3 +16,12 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
+      - name: Screenshots for review
+        if: always()
+        run: flutter test --update-goldens test_visual || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: test_visual/goldens/
+          if-no-files-found: warn

@@ -133,16 +133,30 @@ class ThemeSwatch extends StatelessWidget {
               border: Border.all(color: p.border, width: p.chunky ? 1.6 : 0.8),
             ),
             padding: EdgeInsets.all(4 * k),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (large)
-                Text(p.name, style: AppText.body(13, color: p.text, weight: FontWeight.w900))
-              else
-                Container(height: 3, width: 24, color: p.text.withValues(alpha: 0.7)),
-              SizedBox(height: 3 * k),
-              Container(height: 3 * k, width: 18 * k, color: p.textMuted.withValues(alpha: 0.6)),
-              const Spacer(),
-              Align(
-                alignment: Alignment.bottomRight,
+            child: Stack(children: [
+              Positioned(
+                left: 0,
+                top: 0,
+                right: 0,
+                child: large
+                    ? Text(p.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.body(13, color: p.text, weight: FontWeight.w900))
+                    : Align(
+                        alignment: Alignment.topLeft,
+                        child: Container(height: 3, width: 24, color: p.text.withValues(alpha: 0.7)),
+                      ),
+              ),
+              Positioned(
+                left: 0,
+                top: large ? 22 : 6,
+                child: Container(
+                    height: 3 * k, width: 18 * k, color: p.textMuted.withValues(alpha: 0.6)),
+              ),
+              Positioned(
+                right: 0,
+                bottom: 0,
                 child: Container(
                   height: 8 * k,
                   width: 20 * k,
