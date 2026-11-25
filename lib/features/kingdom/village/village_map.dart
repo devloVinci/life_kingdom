@@ -311,9 +311,9 @@ class _VillageMapState extends ConsumerState<VillageMap> with TickerProviderStat
         for (final r in WorldLayout.regions)
           Positioned(
             key: ValueKey('region_${r.id}'),
-            left: r.label.dx - 90,
+            left: r.label.dx - 110,
             top: r.label.dy - 24,
-            width: 180,
+            width: 220,
             child: Center(
               child: _RegionSign(
                 region: r,
@@ -878,17 +878,23 @@ class _RegionSign extends StatelessWidget {
             Icon(locked ? Icons.lock_rounded : Icons.explore_rounded,
                 size: 16, color: locked ? const Color(0xFFE8B84A) : Colors.white),
             const SizedBox(width: 6),
-            Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(region.name,
-                      style: AppText.body(12, color: Colors.white, weight: FontWeight.w900)),
-                  if (locked)
-                    Text('Level ${region.unlockLevel}',
-                        style: AppText.body(10,
-                            color: const Color(0xFFE8B84A), weight: FontWeight.w800)),
-                ]),
+            Flexible(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(region.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.body(12, color: Colors.white, weight: FontWeight.w900)),
+                    if (locked)
+                      Text('Level ${region.unlockLevel}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.body(10,
+                              color: const Color(0xFFE8B84A), weight: FontWeight.w800)),
+                  ]),
+            ),
           ]),
         ),
       );
