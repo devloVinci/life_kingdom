@@ -37,9 +37,11 @@ jobs:
               im = Image.open(f).convert('RGB')
               im = im.resize((im.width // 2, im.height // 2), Image.LANCZOS)
               buf = io.BytesIO()
-              im.save(buf, 'JPEG', quality=82)
+              im.save(buf, 'JPEG', quality=80)
               name = os.path.basename(f)[:-4]
               print('=====SHOT ' + name)
-              print(base64.b64encode(buf.getvalue()).decode())
+              data = base64.b64encode(buf.getvalue()).decode()
+              for i in range(0, len(data), 2000):
+                  print(data[i:i + 2000])
               print('=====END')
           PY
