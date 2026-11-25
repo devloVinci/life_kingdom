@@ -1,0 +1,47 @@
+name: CI
+on:
+  push:
+    branches: [feat/tile-world]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+      - name: Screenshots for review
+        if: always()
+        run: flutter test --update-goldens test_visual || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: test_visual/goldens/
+          if-no-files-found: warn
+      - name: Print screenshots (base64 jpeg)
+        if: always()
+        continue-on-error: true
+        run: |
+          pip install --quiet pillow
+          python3 - <<'PY'
+          import base64, glob, io, os
+          from PIL import Image
+          for f in sorted(glob.glob('test_visual/goldens/*.png')):
+              im = Image.open(f).convert('RGB')
+              im = im.resize((im.width // 2, im.height // 2), Image.LANCZOS)
+              buf = io.BytesIO()
+              im.save(buf, 'JPEG', quality=80)
+              name = os.path.basename(f)[:-4]
+              print('=====SHOT ' + name)
+              data = base64.b64encode(buf.getvalue()).decode()
+              for i in range(0, len(data), 2000):
+                  print(data[i:i + 2000])
+              print('=====END')
+          PY

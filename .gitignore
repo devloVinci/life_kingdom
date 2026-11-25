@@ -7,3 +7,9 @@ build/
 *.iml
 .DS_Store
 pubspec.lock
+
+# EPIC RPG World pack (Rafael Matos): its licence forbids redistributing the
+# files, and this repo is public. Import them locally with
+# tools/tiles/import_pack.ps1 (see docs/tile_world.md).
+/assets/world/*
+!/assets/world/.gitkeep

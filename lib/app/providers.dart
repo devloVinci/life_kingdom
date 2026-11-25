@@ -10,6 +10,7 @@ import '../core/game/game_engine.dart';
 import '../core/game/models.dart';
 import '../core/game/quest_engine.dart';
 import '../core/game/task_engine.dart';
+import '../core/game/world_growth.dart';
 
 /// Overridden in main() / tests.
 final gameRepositoryProvider =
@@ -164,6 +165,15 @@ class GameController extends Notifier<GameState> {
 
   void setSetting(String key, bool value) =>
       _set(state.copyWith(settings: {...state.settings, key: value}));
+
+  /// Records land the player has watched open, so it never closes again.
+  void markLandSeen(Iterable<String> milestoneIds) {
+    final add = {
+      for (final id in milestoneIds) '${WorldGrowth.seenPrefix}$id': true,
+    }..removeWhere((k, _) => state.settings[k] == true);
+    if (add.isEmpty) return;
+    _set(state.copyWith(settings: {...state.settings, ...add}));
+  }
 
   /// Replaces everything (backup restore / reset).
   void replaceState(GameState s) => _set(s);
