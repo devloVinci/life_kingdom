@@ -30,5 +30,20 @@ Goal: same habit/XP/quest core, a calmer modern UI, and a living world map.
 6. **Cosmetic shop v2.** Categories: UI themes, seasons, decorations, dragon skins, hero outfits, atmosphere, effects, ambience. Each item has a live preview, name, description, price or unlock rule, owned state and an equip button. Earned currency only, no real money, no paid chests; buying something you already own is blocked (already enforced by `alreadyOwned`).
 7. **Progress shows in the world.** Regions open with player level; buildings use their existing levels; streak milestones unlock decorations.
 
+## Status (Nov 25, 2026)
+
+Done on this branch:
+- **Themes**: `UiPalette` (Obsidian default, Ivory, Arcane, Kingdom Classic) in `lib/core/theme/ui_palette.dart`; `AppColors` reads the active palette. Shared widgets (panel, button, XP bar, counters, rank badge, rarity frame, nav bar) restyled.
+- **Seasons**: `SeasonPack` in `lib/core/world/season.dart`. Add a season = add one entry + a shop item.
+- **World**: `lib/core/world/world_layout.dart` (buildings, roads, regions, decor), painters in `lib/features/kingdom/village/world_painters.dart`, actors in `world_actors.dart`, map in `village_map.dart`. Pan/zoom, recenter and overview buttons, regions unlock at levels 5/10/15/25.
+- **Hero and dragon**: `assets/characters/warden` and `assets/characters/dragon_<skin>`; new anims `fly`, `look`, `roar` in `rig_poses.dart`.
+- **Buildings**: SVGs in `assets/buildings/` (+ `_snow` overlays). They scale up slightly with level.
+- **Shop**: World tab (seasons, dragon skins, UI themes); Settings has an Appearance section. Starter cosmetics merged into old saves; `GameState.equippedIn()` gives slot defaults.
+- **Feedback**: reward burst on completion, celebration card on level/rank-ups, animated check circles.
+- **Art pipeline**: `tools/art` (Node + resvg). `npm install && npm run build` regenerates every SVG.
+- **CI**: `.github/workflows/ci.yml` runs analyze + tests and renders review screenshots (`test_visual/`).
+
+Next (agreed for later): building growth stages per level (small house -> manor), more dragon/hero poses, ambient sound packs (`SeasonPack.ambience` is reserved for them).
+
 ## Out of scope
 Combat, pathfinding AI, a physics or game engine, real-money purchases.

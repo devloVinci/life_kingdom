@@ -94,7 +94,7 @@ void main() {
     await _settle(tester);
     if (before != null) {
       await before(tester);
-      await _settle(tester);
+      if (!name.startsWith('habit_complete')) await _settle(tester);
     }
     await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/$name.png'));
   }
@@ -123,4 +123,17 @@ void main() {
   testWidgets('quests ivory', (t) => shot(t, 'quests_ivory', _state(equipped: {'uiTheme': 'ui_ivory'}), before: (t) async {
         await t.tap(find.text('Quests').last);
       }));
+  testWidgets('completing a habit', (t) => shot(
+        t,
+        'habit_complete',
+        const GameState(habits: [Habit(id: 'h1', title: 'Read 20 pages'), Habit(id: 'h2', title: 'Workout')]),
+        before: (t) async {
+          await t.tap(find.text('Today').last);
+          await _settle(t);
+          await t.tap(find.byKey(const Key('complete_button')).first);
+          for (var i = 0; i < 5; i++) {
+            await t.pump(const Duration(milliseconds: 90));
+          }
+        },
+      ));
 }
