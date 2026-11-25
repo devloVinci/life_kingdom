@@ -129,17 +129,33 @@ class _HabitTile extends ConsumerWidget {
                                 'Achievement unlocked: ${unlocked.map((a) => a.title).join(', ')}')));
                       }
                     },
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutBack,
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: done ? AppColors.success : Colors.white,
+                  color: done
+                      ? AppColors.success
+                      : (AppColors.palette.chunky ? Colors.white : AppColors.panelRaised),
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.outline, width: 3),
+                  border: Border.all(
+                      color: AppColors.palette.chunky
+                          ? AppColors.outline
+                          : (done ? AppColors.success : AppColors.accent.withValues(alpha: 0.55)),
+                      width: AppColors.palette.chunky ? 3 : 2),
+                  boxShadow: [
+                    if (done && !AppColors.palette.chunky)
+                      BoxShadow(color: AppColors.success.withValues(alpha: 0.5), blurRadius: 12),
+                  ],
                 ),
-                child: done
-                    ? const Icon(Icons.check, color: Colors.white)
-                    : null,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+                  child: done
+                      ? const Icon(Icons.check_rounded, key: ValueKey('on'), color: Colors.white)
+                      : const SizedBox(key: ValueKey('off')),
+                ),
               ),
             ),
             const SizedBox(width: 12),
