@@ -127,7 +127,7 @@ class _VillageMapState extends ConsumerState<VillageMap> with TickerProviderStat
     return Matrix4(s, 0, 0, 0, 0, s, 0, 0, 0, 0, 1, 0, tx, ty, 0, 1);
   }
 
-  double _homeScale(Size vp) => (vp.width / 470).clamp(_minScale(vp), 1.8);
+  double _homeScale(Size vp) => (vp.width / 540).clamp(_minScale(vp), 1.8);
 
   void _flyTo(Offset focus, {double? scale}) {
     final vp = _viewport;

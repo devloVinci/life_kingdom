@@ -117,7 +117,7 @@ class _ItemCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(gameProvider);
     final owned = s.owned.contains(item.id);
-    final equipped = s.equipped[item.slot] == item.id;
+    final equipped = s.equippedIn(item.slot) == item.id;
 
     Widget action;
     if (equipped) {
@@ -251,7 +251,7 @@ Future<void> showItemPreview(
     builder: (ctx) => Consumer(builder: (ctx, ref, _) {
       final s = ref.watch(gameProvider);
       final owned = s.owned.contains(item.id);
-      final equipped = s.equipped[item.slot] == item.id;
+      final equipped = s.equippedIn(item.slot) == item.id;
       final big = switch (item.type) {
         ItemType.season => SizedBox(height: 150, child: SeasonSwatch(id: item.id, large: true)),
         ItemType.uiTheme => SizedBox(height: 150, child: ThemeSwatch(id: item.id, large: true)),

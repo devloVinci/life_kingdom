@@ -35,8 +35,7 @@ final seasonProvider = Provider<SeasonPack>((ref) => SeasonPack.byId(
 
 /// Equipped dragon skin id, e.g. `dragon_ember`.
 final dragonSkinProvider = Provider<String>((ref) =>
-    ref.watch(gameProvider.select((s) => s.equipped['dragonSkin'])) ??
-    'dragon_ember');
+    ref.watch(gameProvider.select((s) => s.equippedIn('dragonSkin')))!);
 
 class GameController extends Notifier<GameState> {
   @override

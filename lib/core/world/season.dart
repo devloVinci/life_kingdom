@@ -113,9 +113,9 @@ class SeasonPack {
     tagline: 'Amber forests, falling leaves and a low warm sun.',
     skyTop: Color(0xFFF2B47A),
     skyBottom: Color(0xFFFCE4C4),
-    grass: Color(0xFFB4B357),
-    grassDark: Color(0xFF7E7A35),
-    grassTuft: Color(0xFFD1C46E),
+    grass: Color(0xFF9DAE5A),
+    grassDark: Color(0xFF6C7535),
+    grassTuft: Color(0xFFC6C26E),
     path: Color(0xFFD7AE78),
     pathEdge: Color(0xFFA27A48),
     water: Color(0xFF4F93B8),
@@ -127,7 +127,7 @@ class SeasonPack {
     particleColors: [Color(0xFFE5782E), Color(0xFFFFB23F), Color(0xFFB8442A)],
     particleCount: 22,
     light: Color(0xFFFFB46A),
-    lightStrength: 0.12,
+    lightStrength: 0.08,
     ambience: 'wind',
   );
 

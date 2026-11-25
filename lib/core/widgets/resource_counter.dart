@@ -50,7 +50,7 @@ class ResourceCounter extends StatelessWidget {
           ? const EdgeInsets.fromLTRB(4, 4, 14, 4)
           : const EdgeInsets.fromLTRB(4, 4, 12, 4),
       decoration: BoxDecoration(
-        color: p.chunky ? p.deep : Colors.black.withValues(alpha: 0.42),
+        color: p.chunky || !p.isDark ? p.deep : Colors.black.withValues(alpha: 0.42),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
             color: p.chunky ? AppColors.outline : Colors.white.withValues(alpha: 0.12),

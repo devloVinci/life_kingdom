@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:life_kingdom/app/providers.dart';
+import 'package:life_kingdom/core/characters/rig_data.dart';
 import 'package:life_kingdom/core/data/game_repository.dart';
 import 'package:life_kingdom/core/game/models.dart';
 import 'package:life_kingdom/core/theme/app_text.dart';
@@ -78,6 +79,7 @@ void main() {
 
   Future<void> shot(WidgetTester tester, String name, GameState s,
       {Future<void> Function(WidgetTester)? before}) async {
+    RigData.clearCache();
     tester.view.physicalSize = const Size(780, 1688);
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.reset);

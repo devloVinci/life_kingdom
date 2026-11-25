@@ -97,4 +97,12 @@ void main() {
     final levels = [for (final r in WorldLayout.regions) r.unlockLevel];
     expect(levels, orderedEquals([...levels]..sort()));
   });
+
+  test('empty slots fall back to the starter cosmetics', () {
+    const s = GameState();
+    expect(s.equippedIn('season'), 'season_summer');
+    expect(s.equippedIn('uiTheme'), 'ui_obsidian');
+    expect(s.equippedIn('dragonSkin'), 'dragon_ember');
+    expect(s.equippedIn('title'), isNull);
+  });
 }

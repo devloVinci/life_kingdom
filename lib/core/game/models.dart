@@ -316,6 +316,17 @@ class GameState {
   };
   static const defaultEquipped = {'character': 'char_raider'};
 
+  /// What each equip slot shows when nothing was chosen yet.
+  static const slotDefaults = {
+    'character': 'char_raider',
+    'uiTheme': 'ui_obsidian',
+    'season': 'season_summer',
+    'dragonSkin': 'dragon_ember',
+  };
+
+  /// Equipped item for [slot], falling back to the slot's default.
+  String? equippedIn(String slot) => equipped[slot] ?? slotDefaults[slot];
+
   final String playerName;
   final List<TaskItem> tasks;
   final int totalXp;
