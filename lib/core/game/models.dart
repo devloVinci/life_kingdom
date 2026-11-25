@@ -1,3 +1,7 @@
+import 'world_state.dart';
+
+export 'world_state.dart';
+
 import 'game_config.dart';
 
 String dateKeyOf(DateTime d) =>
@@ -305,14 +309,19 @@ class GameState {
     this.settings = const {},
     this.companions = const [],
     this.tasks = const [],
+    this.world = const WorldState(),
   });
 
-  static const schemaVersion = 1;
+  /// v2 adds [world]; v1 saves still load (world starts empty).
+  static const schemaVersion = 2;
   static const defaultOwned = {'char_raider', 'char_builder'};
   static const defaultEquipped = {'character': 'char_raider'};
 
   final String playerName;
   final List<TaskItem> tasks;
+
+  /// Open-world progress (supplies, harvest, reports, records...).
+  final WorldState world;
   final int totalXp;
   final int gold;
   final int gems;
@@ -369,6 +378,7 @@ class GameState {
     Map<String, bool>? settings,
     List<String>? companions,
     List<TaskItem>? tasks,
+    WorldState? world,
   }) =>
       GameState(
         playerName: playerName ?? this.playerName,
@@ -388,6 +398,7 @@ class GameState {
         settings: settings ?? this.settings,
         companions: companions ?? this.companions,
         tasks: tasks ?? this.tasks,
+        world: world ?? this.world,
       );
 
   /// Full backup document (also used for local persistence).
@@ -410,12 +421,13 @@ class GameState {
         'settings': settings,
         'companions': companions,
         'tasks': tasks.map((t) => t.toJson()).toList(),
+        'world': world.toJson(),
       };
 
   /// Throws [FormatException] for unknown versions or malformed data.
   factory GameState.fromJson(Map<String, dynamic> j) {
     final v = j['schemaVersion'];
-    if (v != schemaVersion) {
+    if (v != schemaVersion && v != 1) {
       throw FormatException('Unsupported backup version: $v');
     }
     try {
@@ -457,6 +469,9 @@ class GameState {
         tasks: ((j['tasks'] as List?) ?? const [])
             .map((e) => TaskItem.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList(),
+        world: j['world'] == null
+            ? const WorldState()
+            : WorldState.fromJson(Map<String, dynamic>.from(j['world'] as Map)),
       );
     } on TypeError catch (e) {
       throw FormatException('Malformed backup: $e');

@@ -7,3 +7,8 @@ build/
 *.iml
 .DS_Store
 pubspec.lock
+
+# ClashOpenWorld pack: copied locally by tools/openworld/import_pack.ps1
+# (not stored in this public repo).
+/assets/openworld/*
+!/assets/openworld/.gitkeep

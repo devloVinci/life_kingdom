@@ -64,8 +64,12 @@ class GameEngine {
 
   // ---- Streak (derived from completions + freeze dates) ----
 
+  /// A day counts when any habit or task was finished on it, or when it is
+  /// covered by a fortification (rest day).
   static Set<String> countedDates(GameState s) => {
         for (final c in s.completions) c.dateKey,
+        for (final t in s.tasks)
+          if (t.doneKey != null) t.doneKey!,
         ...s.streak.freezeDates,
       };
 
@@ -93,6 +97,8 @@ class GameEngine {
   /// Applies streak freezes to missed days. Call whenever the app opens
   /// and before every completion.
   static GameState rollover(GameState s, DateTime now) {
+    // Fortifications are spent by choice; automatic use is a setting.
+    if (!s.setting('auto_fortify')) return s;
     final counted = countedDates(s);
     if (counted.isEmpty) return s;
     final today = dayStart(now);

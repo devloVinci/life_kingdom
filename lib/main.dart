@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/providers.dart';
@@ -7,7 +8,7 @@ import 'core/data/game_repository.dart';
 import 'core/notifications/notification_providers.dart';
 import 'core/notifications/notification_service_stub.dart'
     if (dart.library.io) 'core/notifications/notification_service_mobile.dart';
-import 'core/theme/app_theme.dart';
+import 'features/ow/ow_style.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,9 +34,16 @@ class LifeKingdomApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(notificationSyncProvider);
     return MaterialApp.router(
-      title: 'Life Kingdom',
+      title: 'المملكة',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
+      theme: Ow.theme(),
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar'), Locale('en')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       routerConfig: ref.watch(_routerProvider),
     );
   }

@@ -10,6 +10,7 @@ import '../core/game/game_engine.dart';
 import '../core/game/models.dart';
 import '../core/game/quest_engine.dart';
 import '../core/game/task_engine.dart';
+import '../core/game/world_engine.dart';
 
 /// Overridden in main() / tests.
 final gameRepositoryProvider =
@@ -25,14 +26,20 @@ final gameProvider =
 
 class GameController extends Notifier<GameState> {
   @override
-  GameState build() => EconomyEngine.settleBuildings(GameEngine.rollover(
-      ref.read(initialGameStateProvider), ref.read(clockProvider)()));
+  GameState build() {
+    final now = ref.read(clockProvider)();
+    return WorldEngine.settle(
+        EconomyEngine.settleBuildings(
+            GameEngine.rollover(ref.read(initialGameStateProvider), now)),
+        now);
+  }
 
   DateTime get _now => ref.read(clockProvider)();
 
   final List<AchievementDef> _unlocked = [];
 
-  void _set(GameState s) {
+  void _set(GameState input) {
+    final s = WorldEngine.settle(input, _now);
     final r = AchievementEngine.evaluate(s, _now);
     _unlocked.addAll(r.unlocked);
     state = r.state;
@@ -48,13 +55,20 @@ class GameController extends Notifier<GameState> {
 
   CompletionOutcome complete(String habitId) {
     final o = GameEngine.complete(state, habitId, _now);
-    if (o.ok) _set(EconomyEngine.settleBuildings(o.state));
+    if (o.ok) {
+      final h = state.habits.firstWhere((x) => x.id == habitId);
+      _set(EconomyEngine.settleBuildings(
+          WorldEngine.onWork(o.state, h.difficulty, _now)));
+    }
     return o;
   }
 
   CompletionOutcome undo(String habitId) {
     final o = GameEngine.undo(state, habitId, _now);
-    if (o.ok) _set(o.state);
+    if (o.ok) {
+      final h = state.habits.firstWhere((x) => x.id == habitId);
+      _set(WorldEngine.onUndo(o.state, h.difficulty, _now));
+    }
     return o;
   }
 
@@ -73,8 +87,49 @@ class GameController extends Notifier<GameState> {
 
   CompletionOutcome completeTask(String id) {
     final o = TaskEngine.complete(state, id, _now);
-    if (o.ok) _set(o.state);
+    if (o.ok) {
+      final t = state.tasks.firstWhere((x) => x.id == id);
+      _set(o.goldGained > 0
+          ? WorldEngine.onWork(o.state, t.difficulty, _now, taskId: id)
+          : o.state);
+    }
     return o;
+  }
+
+  // ---- Open world ----
+
+  void setMainTask(String id) => _set(WorldEngine.setMainTask(state, id, _now));
+
+  int collectHarvest() {
+    final (s, g) = WorldEngine.collectHarvest(state);
+    if (g > 0) _set(s);
+    return g;
+  }
+
+  /// Gold won back from the goblin, or -1 if he cannot be chased yet.
+  int chaseGoblin() {
+    if (!WorldEngine.canChaseGoblin(state, _now)) return -1;
+    final (s, g) = WorldEngine.chaseGoblin(state, _now);
+    _set(s);
+    return g;
+  }
+
+  DailyChest? claimChest() {
+    final (s, c) = WorldEngine.claimChest(state, _now);
+    if (c != null) _set(s);
+    return c;
+  }
+
+  WeeklyReport? claimReport() {
+    final (s, r) = WorldEngine.claimReport(state, _now);
+    if (r != null) _set(s);
+    return r;
+  }
+
+  RestStatus declareRest() {
+    final (s, st) = WorldEngine.declareRest(state, _now);
+    if (st == RestStatus.ok) _set(s);
+    return st;
   }
 
   // ---- Shop ----
