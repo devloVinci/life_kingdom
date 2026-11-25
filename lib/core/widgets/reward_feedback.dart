@@ -83,7 +83,7 @@ class _RewardPopState extends State<_RewardPop> with SingleTickerProviderStateMi
           return Stack(children: [
             Positioned.fill(child: CustomPaint(painter: _SparkPainter(t))),
             Align(
-              alignment: const Alignment(0, -0.2),
+              alignment: const Alignment(0, -0.62),
               child: Transform.translate(
                 offset: Offset(0, -70 * Curves.easeOut.transform(t)),
                 child: Opacity(
@@ -139,7 +139,7 @@ class _SparkPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final c = Offset(size.width / 2, size.height * 0.4);
+    final c = Offset(size.width / 2, size.height * 0.2);
     final k = Curves.easeOutCubic.transform(t);
     final fade = (1 - t).clamp(0.0, 1.0);
     const colors = [Color(0xFFFFD34D), Color(0xFF6FD3FF), Color(0xFFFFFFFF), Color(0xFFFFA94D)];
