@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="210" viewBox="0 0 200 210" fill="none">
+<defs><linearGradient id="l25" x1="0.500" y1="0.000" x2="0.500" y2="1.000"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d6e6f5"/></linearGradient><linearGradient id="l26" x1="0.500" y1="0.000" x2="0.500" y2="1.000"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d6e6f5"/></linearGradient><linearGradient id="l27" x1="0.500" y1="0.000" x2="0.500" y2="1.000"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d6e6f5"/></linearGradient></defs>
+<path d="M86.14 40.36 Q93.4 45 100 42.099999999999994 Q107.26 46.16 113.86 40.36 L100 17 Z" fill="none" stroke="#1a1622" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M86.14 40.36 Q93.4 45 100 42.099999999999994 Q107.26 46.16 113.86 40.36 L100 17 Z" fill="url(#l25)"/>
+<path d="M27.5 80.64 Q33 84 38 81.9 Q43.5 84.84 48.5 80.64 L38 64 Z" fill="none" stroke="#1a1622" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M27.5 80.64 Q33 84 38 81.9 Q43.5 84.84 48.5 80.64 L38 64 Z" fill="url(#l26)"/>
+<path d="M151.5 80.64 Q157 84 162 81.9 Q167.5 84.84 172.5 80.64 L162 64 Z" fill="none" stroke="#1a1622" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M151.5 80.64 Q157 84 162 81.9 Q167.5 84.84 172.5 80.64 L162 64 Z" fill="url(#l27)"/>
+<path d="M49 125 Q57 121 65.3 125 Z" fill="#fff"/>
+<path d="M63.3 125 Q71.3 121 79.6 125 Z" fill="#fff"/>
+<path d="M77.6 125 Q85.6 121 93.89999999999999 125 Z" fill="#fff"/>
+<path d="M91.9 125 Q99.9 121 108.2 125 Z" fill="#fff"/>
+<path d="M106.2 125 Q114.2 121 122.5 125 Z" fill="#fff"/>
+<path d="M120.5 125 Q128.5 121 136.8 125 Z" fill="#fff"/>
+<path d="M134.8 125 Q142.8 121 151.10000000000002 125 Z" fill="#fff"/>
+</svg>

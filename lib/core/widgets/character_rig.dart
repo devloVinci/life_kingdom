@@ -16,6 +16,7 @@ class CharacterRig extends StatefulWidget {
     this.anim = RigAnim.idle,
     this.animate = true,
     this.fallback,
+    this.hiddenRoles = const {},
   });
 
   final String slug;
@@ -27,6 +28,10 @@ class CharacterRig extends StatefulWidget {
 
   /// Shown while loading or if the art is missing.
   final Widget? fallback;
+
+  /// Parts with these roles are not drawn (e.g. `shadow` for a flying
+  /// dragon whose shadow is drawn separately on the ground).
+  final Set<String> hiddenRoles;
 
   /// Global switch; tests turn it off so pumpAndSettle can finish.
   static bool enableAnimation = true;
@@ -89,7 +94,8 @@ class _CharacterRigState extends State<CharacterRig>
             child: AnimatedBuilder(
               animation: _c,
               builder: (context, _) => Stack(children: [
-                for (final p in rig.parts) _part(rig, p, k, w),
+                for (final p in rig.parts)
+                  if (!widget.hiddenRoles.contains(p.role)) _part(rig, p, k, w),
               ]),
             ),
           ),

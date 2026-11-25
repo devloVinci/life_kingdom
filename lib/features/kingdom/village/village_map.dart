@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
@@ -9,16 +12,17 @@ import '../../../core/characters/rig_data.dart';
 import '../../../core/characters/rig_poses.dart';
 import '../../../core/game/catalog.dart';
 import '../../../core/game/economy_engine.dart';
+import '../../../core/game/game_engine.dart';
 import '../../../core/game/models.dart';
 import '../../../core/game/quest_engine.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/character_avatar.dart';
 import '../../../core/widgets/character_rig.dart';
-import 'village_painters.dart';
-
-const double stageW = 390;
-const double stageH = 844;
+import '../../../core/world/season.dart';
+import '../../../core/world/world_layout.dart';
+import 'world_actors.dart';
+import 'world_painters.dart';
 
 /// What the village needs to know about the game, derived once per build.
 class _Facts {
@@ -30,12 +34,13 @@ class _Facts {
     final unowned = heroes.where((h) => !s.owned.contains(h.id)).toList()
       ..sort((a, b) => _cost(a).compareTo(_cost(b)));
     affordable = unowned.where((h) => canAfford(s, h)).toList();
-    teaser = affordable.isNotEmpty
-        ? affordable.first
-        : (unowned.isEmpty ? null : unowned.first);
-    treasuryReady = s.gold >=
-        EconomyEngine.upgradeCost(s.buildingLevel('treasury') + 1) &&
+    teaser = affordable.isNotEmpty ? affordable.first : (unowned.isEmpty ? null : unowned.first);
+    treasuryReady = s.gold >= EconomyEngine.upgradeCost(s.buildingLevel('treasury') + 1) &&
         busy < EconomyEngine.builderSlots(s);
+    level = GameEngine.level(s);
+    streak = GameEngine.currentStreak(s, now);
+    due = s.habits.where((h) => !h.archived && h.isDueOn(now)).length;
+    done = GameEngine.completedToday(s, now);
   }
 
   late final ShopItem equipped;
@@ -45,6 +50,7 @@ class _Facts {
   late final List<ShopItem> affordable;
   late final ShopItem? teaser;
   late final bool treasuryReady;
+  late final int level, streak, due, done;
 
   static int _cost(ShopItem i) => i.goldPrice ?? ((i.gemPrice ?? 0) * 10);
 
@@ -53,8 +59,8 @@ class _Facts {
       (i.gemPrice != null && s.gems >= i.gemPrice!);
 }
 
-/// The animated village (Figma "Kingdom Home"): a 390x844 stage that is
-/// scaled to fit the screen.
+/// The living kingdom: a pannable, zoomable world with seasons, buildings,
+/// the player's Warden and a wandering dragon.
 class VillageMap extends ConsumerStatefulWidget {
   const VillageMap({super.key});
 
@@ -62,208 +68,170 @@ class VillageMap extends ConsumerStatefulWidget {
   ConsumerState<VillageMap> createState() => _VillageMapState();
 }
 
-class _VillageMapState extends ConsumerState<VillageMap>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _t =
-      AnimationController(vsync: this, duration: const Duration(seconds: 24));
+class _VillageMapState extends ConsumerState<VillageMap> with TickerProviderStateMixin {
+  final _time = ValueNotifier<double>(0);
+  late final WorldSim _sim;
+  Ticker? _ticker;
+  Duration _last = Duration.zero;
+  final _camera = TransformationController();
+  AnimationController? _fly;
+  Size? _viewport;
+  final _rnd = math.Random();
+
+  bool get _animated => CharacterRig.enableAnimation;
+
+  static const _home = Offset(550, 790);
+
+  static Set<String> _unlockedFor(int level) => {
+        for (final r in WorldLayout.regions)
+          if (level >= r.unlockLevel) r.id,
+      };
 
   @override
   void initState() {
     super.initState();
-    if (CharacterRig.enableAnimation) {
-      _t.repeat();
-    } else {
-      _t.value = 0.1;
+    _sim = WorldSim(unlockedRegions: _unlockedFor(GameEngine.level(ref.read(gameProvider))));
+    if (_animated) {
+      _ticker = createTicker(_onTick)..start();
     }
+  }
+
+  void _onTick(Duration elapsed) {
+    final dt = ((elapsed - _last).inMicroseconds / 1e6).clamp(0.0, 0.05);
+    _last = elapsed;
+    _time.value = elapsed.inMicroseconds / 1e6;
+    _sim.tick(dt);
   }
 
   @override
   void dispose() {
-    _t.dispose();
+    _ticker?.dispose();
+    _fly?.dispose();
+    _camera.dispose();
+    _time.dispose();
+    _sim.dispose();
     super.dispose();
   }
 
-  static const _trees = <(double, double, double, double)>[
-    (8, 120, 44, 56), (52.2, 106, 39.6, 50.4), (318, 110, 44, 56),
-    (347.3, 158, 37.4, 47.6), (132.4, 118, 35.2, 44.8), (232.2, 124, 39.6, 50.4),
-    (2.9, 293, 46.2, 58.8), (12, 480, 44, 56), (340, 485, 44, 56),
-    (1.8, 656, 48.4, 61.6), (339.8, 658, 48.4, 61.6), (131.3, 688, 37.4, 47.6),
-    (228.2, 688, 39.6, 50.4), (336.6, 310, 30.8, 39.2), (26.4, 406, 35.2, 44.8),
-  ];
+  // ---- Camera ----
 
-  // Building origins (top-left) from the Figma frame.
-  static const _origins = <String, Offset>{
-    'keep': Offset(120, 232),
-    'builders_hut': Offset(45, 416),
-    'army_camp': Offset(245, 400),
-    'laboratory': Offset(37, 164),
-    'treasury': Offset(260, 206),
-    'clan_castle': Offset(240, 524),
-    'shop': Offset(36, 552),
-    'magic_items': Offset(150, 582),
-  };
+  double _minScale(Size vp) =>
+      math.max(vp.width / WorldLayout.size.width, vp.height / WorldLayout.size.height);
 
-  static const _names = <String, String>{
-    'keep': 'Keep',
-    'builders_hut': "Builder's Hut",
-    'army_camp': 'Army Camp',
-    'laboratory': 'Laboratory',
-    'treasury': 'Treasury',
-    'clan_castle': 'Clan Castle',
-    'shop': 'Shop',
-    'magic_items': 'Magic Items',
-  };
+  Matrix4 _view(Size vp, Offset focus, double scale) {
+    final s = scale.clamp(_minScale(vp), 2.2);
+    final w = WorldLayout.size.width * s, h = WorldLayout.size.height * s;
+    final tx = (vp.width / 2 - focus.dx * s).clamp(vp.width - w, 0.0);
+    final ty = (vp.height / 2 - focus.dy * s).clamp(vp.height - h, 0.0);
+    // Column-major: scale on the diagonal, translation in the last column.
+    return Matrix4(s, 0, 0, 0, 0, s, 0, 0, 0, 0, 1, 0, tx, ty, 0, 1);
+  }
 
-  // Where resident heroes stand (top-left of a ~51x59 box).
-  static const _heroSpots = <Offset>[
-    Offset(56, 318), Offset(248, 346), Offset(292, 664), Offset(90, 366),
-    Offset(158, 526), Offset(96, 650), Offset(190, 706), Offset(300, 590),
-    Offset(196, 530), Offset(24, 600), Offset(185, 330), Offset(20, 230),
-  ];
+  double _homeScale(Size vp) => (vp.width / 470).clamp(_minScale(vp), 1.8);
+
+  void _flyTo(Offset focus, {double? scale}) {
+    final vp = _viewport;
+    if (vp == null) return;
+    final target = _view(vp, focus, scale ?? _camera.value.getMaxScaleOnAxis());
+    if (!_animated) {
+      _camera.value = target;
+      return;
+    }
+    _fly?.dispose();
+    final c = AnimationController(vsync: this, duration: const Duration(milliseconds: 750));
+    _fly = c;
+    final anim = Matrix4Tween(begin: _camera.value.clone(), end: target)
+        .animate(CurvedAnimation(parent: c, curve: Curves.easeInOutCubic));
+    anim.addListener(() => _camera.value = anim.value);
+    c.forward();
+  }
+
+  // ---- Interactions ----
+
+  void _toast(String m) => ScaffoldMessenger.of(context)
+    ..clearSnackBars()
+    ..showSnackBar(SnackBar(content: Text(m), duration: const Duration(seconds: 2)));
 
   void _openBuilding(String id) {
     switch (id) {
       case 'shop':
         context.go('/shop');
       case 'magic_items':
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(const SnackBar(
-              content: Text('Magic Items are coming soon!'),
-              duration: Duration(seconds: 2)));
+        _toast('Magic Items are coming soon!');
       default:
         context.push('/building/$id');
     }
   }
 
+  void _tapHero(_Facts f) {
+    HapticFeedback.lightImpact();
+    _sim.hero.react(heroLine(_rnd, due: f.due, done: f.done, streak: f.streak));
+  }
+
+  void _tapDragon() {
+    HapticFeedback.mediumImpact();
+    _sim.dragon.react();
+  }
+
+  void _tapRegion(WorldRegion r, bool locked) {
+    _flyTo(r.label);
+    _toast(locked ? 'Reach level ${r.unlockLevel} to explore ${r.name}.' : r.name);
+  }
+
+  // ---- Build ----
+
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(gameProvider);
+    final season = ref.watch(seasonProvider);
+    final skin = ref.watch(dragonSkinProvider);
     final now = ref.watch(clockProvider)();
     final f = _Facts(s, now);
-    final sprites = <(double, Widget)>[];
+    _sim.unlocked = _unlockedFor(f.level);
+    final locked = [
+      for (final r in WorldLayout.regions)
+        if (f.level < r.unlockLevel) r,
+    ];
 
-    for (final (i, t) in _trees.indexed) {
-      sprites.add((
-        t.$2 + t.$4,
-        Positioned(
-          left: t.$1,
-          top: t.$2,
-          child: _Sway(
-              t: _t,
-              phase: i * 0.7,
-              child: VillageTree(size: Size(t.$3, t.$4))),
-        ),
-      ));
-    }
-
-    for (final e in _origins.entries) {
-      final art = buildingArt[e.key]!;
-      final upgrading = s.building(e.key).upgrading;
-      String? badge;
-      Color badgeColor = AppColors.danger;
-      switch (e.key) {
-        case 'builders_hut':
-          if (f.busy > 0) badge = '${f.busy}';
-        case 'army_camp':
-          if (f.claimable) badge = '!';
-        case 'treasury':
-          if (f.treasuryReady) {
-            badge = r'$';
-            badgeColor = AppColors.success;
-          }
-        case 'shop':
-          if (f.affordable.isNotEmpty) {
-            badge = 'NEW';
-            badgeColor = AppColors.gem;
-          }
-      }
-      if (upgrading) {
-        badge = '${EconomyEngine.daysLeft(s, e.key)}d';
-        badgeColor = AppColors.panelLight;
-      }
-      final isBld = s.building(e.key).level > 0 && Catalog.buildingById.containsKey(e.key);
-      final label = isBld
-          ? '${_names[e.key]} ${s.buildingLevel(e.key)}'
-          : _names[e.key]!;
-      sprites.add((
-        e.value.dy + art.size.height,
-        Positioned(
-          left: e.value.dx,
-          top: e.value.dy,
-          child: _BuildingSprite(
-            key: Key('bld_${e.key}'),
-            art: art,
-            label: label,
-            badge: badge,
-            badgeColor: badgeColor,
-            t: _t,
-            upgrading: upgrading,
-            smoke: e.key == 'builders_hut',
-            flag: e.key == 'keep',
-            onTap: () => _openBuilding(e.key),
-          ),
-        ),
-      ));
-    }
-
-    // Builder at the hut.
-    sprites.add((
-      443.2 + 58.8,
-      Positioned(
-        left: 146,
-        top: 443.2,
-        child: _Actor(
-          key: const Key('actor_builder'),
-          slug: 'builder',
-          anim: f.busy > 0 ? RigAnim.work : RigAnim.idle,
-          onTap: () => _openBuilding('builders_hut'),
-        ),
-      ),
+    // Static sprites (rebuilt when the game state changes).
+    final statics = <_Sprite>[
+      for (final spot in WorldLayout.buildings.values) _buildingSprite(s, f, spot, season),
+    ];
+    statics.add(_heroSprite(
+      key: 'actor_builder',
+      slug: 'builder',
+      ground: WorldLayout.door('builders_hut') + const Offset(44, 2),
+      anim: f.busy > 0 ? RigAnim.work : RigAnim.idle,
+      onTap: () => _openBuilding('builders_hut'),
     ));
-
-    // The equipped hero stands on the plaza and always shows a glow.
     final eqSlug = rigSlugForItemId(f.equipped.id);
     if (eqSlug != null) {
-      sprites.add((
-        446 + 58.8,
-        Positioned(
-          left: 206,
-          top: 446,
-          child: _Actor(
-            key: const Key('actor_equipped'),
-            slug: eqSlug,
-            anim: RigAnim.idle,
-            glow: AppColors.gold,
-            t: _t,
-            onTap: () => context.push('/character/${f.equipped.id}'),
-          ),
-        ),
+      statics.add(_heroSprite(
+        key: 'actor_equipped',
+        slug: eqSlug,
+        ground: WorldLayout.plaza + const Offset(58, 12),
+        anim: RigAnim.idle,
+        glow: AppColors.gold,
+        onTap: () => context.push('/character/${f.equipped.id}'),
       ));
     }
-
-    // Every other owned hero lives in the village and wanders a little.
     var spot = 0;
     for (final h in f.heroes) {
-      if (!s.owned.contains(h.id) ||
-          h.id == f.equipped.id ||
-          h.id == 'char_builder') {
-        continue;
-      }
+      if (!s.owned.contains(h.id) || h.id == f.equipped.id || h.id == 'char_builder') continue;
       final slug = rigSlugForItemId(h.id);
-      if (slug == null || spot >= _heroSpots.length) continue;
-      final p = _heroSpots[spot];
-      sprites.add((
-        p.dy + 58.8,
+      if (slug == null || spot >= _residentSpots.length) continue;
+      final p = _residentSpots[spot];
+      statics.add(_Sprite(
+        p.dy,
         Positioned(
-          left: p.dx,
-          top: p.dy,
+          key: ValueKey('hero_${h.id}'),
+          left: p.dx - _actorW / 2,
+          top: p.dy - _actorH,
           child: _Wanderer(
-            key: Key('hero_${h.id}'),
             slug: slug,
-            t: _t,
-            phase: spot * 0.37,
-            amp: 8 + (spot % 3) * 4,
+            time: _time,
+            phase: spot * 0.9,
+            amp: 8 + (spot % 3) * 4.0,
             walks: spot.isEven,
             onTap: () => context.push('/character/${h.id}'),
           ),
@@ -271,40 +239,36 @@ class _VillageMapState extends ConsumerState<VillageMap>
       ));
       spot++;
     }
-
-    // Teaser: the next hero to buy, as a silhouette on a pedestal.
     if (f.teaser != null) {
-      sprites.add((
-        404,
+      final p = WorldLayout.plaza + const Offset(-118, 4);
+      statics.add(_Sprite(
+        p.dy,
         Positioned(
-          left: 292,
-          top: 308,
+          key: const ValueKey('teaser'),
+          left: p.dx - 37,
+          top: p.dy - 92,
           child: _Teaser(
-            key: const Key('teaser'),
             item: f.teaser!,
             state: s,
-            t: _t,
+            time: _time,
             onTap: () => context.push('/character/${f.teaser!.id}'),
           ),
         ),
       ));
     }
-
-    // Chests waiting to be opened.
-    const chestSpots = [Offset(168, 496), Offset(212, 500), Offset(124, 522)];
-    final types = s.chests.toSet().take(3).toList();
-    for (final (i, type) in types.indexed) {
-      final p = chestSpots[i];
-      sprites.add((
-        p.dy + 44,
+    const chestSpots = [Offset(-22, 74), Offset(16, 80), Offset(-58, 64)];
+    for (final (i, type) in s.chests.toSet().take(3).indexed) {
+      final p = WorldLayout.plaza + chestSpots[i];
+      statics.add(_Sprite(
+        p.dy,
         Positioned(
-          left: p.dx,
-          top: p.dy,
+          key: ValueKey('chest_$type'),
+          left: p.dx - 22,
+          top: p.dy - 40,
           child: _Chest(
-            key: Key('chest_$type'),
             type: type,
             count: s.chests.where((c) => c == type).length,
-            t: _t,
+            time: _time,
             phase: i * 0.3,
             onTap: () => openChestDialog(context, ref, type),
           ),
@@ -312,131 +276,626 @@ class _VillageMapState extends ConsumerState<VillageMap>
       ));
     }
 
-    sprites.sort((a, b) => a.$1.compareTo(b.$1));
-
-    final stage = SizedBox(
-      width: stageW,
-      height: stageH,
-      child: ClipRect(
-        child: Stack(clipBehavior: Clip.none, children: [
-          const Positioned.fill(child: _Ground()),
-          Positioned.fill(
-              child: _Ambient(t: _t, treasury: s.buildingLevel('treasury'))),
-          for (final sp in sprites) sp.$2,
-        ]),
-      ),
-    );
-
-    // The stage keeps its proportions; whatever is left over on big or
-    // wide screens is filled with more meadow and trees.
-    return LayoutBuilder(builder: (context, box) {
-      final k = math.min(box.maxWidth / stageW, box.maxHeight / stageH);
-      final sw = stageW * k, sh = stageH * k;
-      final rect = Rect.fromLTWH(
-          (box.maxWidth - sw) / 2, (box.maxHeight - sh) / 2, sw, sh);
-      return DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF8CCC4D), Color(0xFF70BF3B), Color(0xFF549E2E)],
+    final world = SizedBox(
+      width: WorldLayout.size.width,
+      height: WorldLayout.size.height,
+      child: Stack(clipBehavior: Clip.none, children: [
+        Positioned.fill(
+          child: RepaintBoundary(child: CustomPaint(painter: GroundPainter(season))),
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: RepaintBoundary(
+                child: CustomPaint(painter: LivingPainter(time: _time, season: season))),
           ),
         ),
-        child: Stack(children: [
-          Positioned.fill(
-              child: CustomPaint(painter: _MarginPainter(rect, k))),
-          Center(child: FittedBox(fit: BoxFit.contain, child: stage)),
-          // Cloud shadows cross the whole screen, not just the stage.
+        Positioned.fill(
+          child: AnimatedBuilder(
+            animation: _sim,
+            builder: (context, _) {
+              final all = [...statics, ..._actors(f, skin)]
+                ..sort((a, b) => a.baseline.compareTo(b.baseline));
+              return Stack(clipBehavior: Clip.none, children: [for (final a in all) a.widget]);
+            },
+          ),
+        ),
+        if (locked.isNotEmpty)
           Positioned.fill(
             child: IgnorePointer(
-              child: AnimatedBuilder(
-                animation: _t,
-                builder: (_, __) =>
-                    CustomPaint(painter: _CloudPainter(_t.value, k)),
+              child: RepaintBoundary(
+                child: CustomPaint(
+                    painter: FogPainter(time: _time, locked: locked, tint: season.skyBottom)),
               ),
             ),
           ),
-        ]),
-      );
+        for (final r in WorldLayout.regions)
+          Positioned(
+            key: ValueKey('region_${r.id}'),
+            left: r.label.dx - 90,
+            top: r.label.dy - 24,
+            width: 180,
+            child: Center(
+              child: _RegionSign(
+                region: r,
+                locked: locked.contains(r),
+                onTap: () => _tapRegion(r, locked.contains(r)),
+              ),
+            ),
+          ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: ColoredBox(color: season.light.withValues(alpha: season.lightStrength)),
+          ),
+        ),
+      ]),
+    );
+
+    return LayoutBuilder(builder: (context, box) {
+      final vp = box.biggest;
+      if (_viewport == null) {
+        _camera.value = _view(vp, _home, _homeScale(vp));
+      } else if ((_viewport!.width - vp.width).abs() > 1 ||
+          (_viewport!.height - vp.height).abs() > 1) {
+        SchedulerBinding.instance
+            .addPostFrameCallback((_) => _camera.value = _view(vp, _home, _homeScale(vp)));
+      }
+      _viewport = vp;
+      final bottomInset = MediaQuery.of(context).padding.bottom;
+      return Stack(children: [
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [season.skyTop, season.skyBottom],
+              ),
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: InteractiveViewer(
+            transformationController: _camera,
+            constrained: false,
+            minScale: _minScale(vp),
+            maxScale: 2.2,
+            boundaryMargin: EdgeInsets.zero,
+            child: world,
+          ),
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: RepaintBoundary(
+              child: CustomPaint(painter: WeatherPainter(time: _time, season: season)),
+            ),
+          ),
+        ),
+        // Soft vignette keeps the eye in the middle and the HUD readable.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  radius: 1.05,
+                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.22)],
+                  stops: const [0.62, 1],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 12,
+          bottom: 104 + bottomInset,
+          child: Column(children: [
+            _MapButton(
+              key: const Key('map_recenter'),
+              icon: Icons.my_location_rounded,
+              tooltip: 'Find my hero',
+              onTap: () => _flyTo(_sim.hero.pos, scale: math.max(_homeScale(vp), 1.15)),
+            ),
+            const SizedBox(height: 10),
+            _MapButton(
+              key: const Key('map_overview'),
+              icon: Icons.zoom_out_map_rounded,
+              tooltip: 'Whole kingdom',
+              onTap: () => _flyTo(WorldLayout.size.center(Offset.zero), scale: _minScale(vp)),
+            ),
+          ]),
+        ),
+      ]);
     });
   }
+
+  /// Hero and dragon sprites for the current frame.
+  List<_Sprite> _actors(_Facts f, String skin) {
+    final out = <_Sprite>[];
+    final h = _sim.hero;
+    const hh = 74.0;
+    const hw = hh * 120 / 160;
+    out.add(_Sprite(
+      h.pos.dy,
+      Positioned(
+        key: const ValueKey('actor_hero'),
+        left: h.pos.dx - hw / 2,
+        top: h.pos.dy - hh * 150 / 160,
+        width: hw,
+        height: hh,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _tapHero(f),
+          child: Stack(clipBehavior: Clip.none, children: [
+            Transform.flip(
+              flipX: h.facingLeft,
+              child: CharacterRig(slug: 'warden', height: hh, anim: h.anim),
+            ),
+            if (h.bubble != null)
+              Positioned(
+                left: -80,
+                right: -80,
+                bottom: hh + 2,
+                child: Center(
+                  child: Opacity(opacity: h.bubbleOpacity, child: _Bubble(h.bubble!)),
+                ),
+              ),
+          ]),
+        ),
+      ),
+    ));
+
+    final d = _sim.dragon;
+    const dh = 104.0;
+    const dw = dh * 180 / 160;
+    final lift = d.alt * DragonSim.cruise;
+    // The ground shadow stays on the ground and shrinks as the dragon climbs.
+    final sw = 70 * (1 - 0.45 * d.alt);
+    out.add(_Sprite(
+      d.pos.dy - 0.5,
+      Positioned(
+        key: const ValueKey('dragon_shadow'),
+        left: d.pos.dx - sw / 2,
+        top: d.pos.dy - 6,
+        width: sw,
+        height: 12,
+        child: IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.26 - 0.12 * d.alt),
+              borderRadius: const BorderRadius.all(Radius.elliptical(40, 8)),
+            ),
+          ),
+        ),
+      ),
+    ));
+    out.add(_Sprite(
+      // A flying dragon draws above everything on the ground.
+      d.pos.dy + (d.alt > 0.2 ? 2000 : 0),
+      Positioned(
+        key: const ValueKey('actor_dragon'),
+        left: d.pos.dx - dw * 92 / 180,
+        top: d.pos.dy - dh * 142 / 160 - lift,
+        width: dw,
+        height: dh,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _tapDragon,
+          child: Transform.flip(
+            flipX: d.facingLeft,
+            child: Stack(clipBehavior: Clip.none, children: [
+              CharacterRig(slug: skin, height: dh, anim: d.anim, hiddenRoles: const {'shadow'}),
+              if (d.fire > 0)
+                Positioned(
+                  left: dw * 166 / 180,
+                  top: dh * 60 / 160 - 6 * d.fire,
+                  child: IgnorePointer(child: _FirePuff(progress: d.fire, skin: skin)),
+                ),
+            ]),
+          ),
+        ),
+      ),
+    ));
+    return out;
+  }
+
+  static final List<Offset> _residentSpots = [
+    WorldLayout.door('laboratory') + const Offset(-50, 20),
+    WorldLayout.door('treasury') + const Offset(54, 16),
+    WorldLayout.door('army_camp') + const Offset(-60, 28),
+    WorldLayout.door('shop') + const Offset(56, 18),
+    WorldLayout.door('magic_items') + const Offset(-54, 22),
+    WorldLayout.door('clan_castle') + const Offset(-80, 6),
+    WorldLayout.door('keep') + const Offset(-96, 40),
+    WorldLayout.door('keep') + const Offset(96, 40),
+    WorldLayout.door('army_camp') + const Offset(60, 30),
+    WorldLayout.door('clan_castle') + const Offset(84, 8),
+    WorldLayout.door('builders_hut') + const Offset(-56, 26),
+    WorldLayout.door('laboratory') + const Offset(52, 26),
+  ];
+
+  _Sprite _buildingSprite(GameState s, _Facts f, BuildingSpot spot, SeasonPack season) {
+    final id = spot.id;
+    final st = s.building(id);
+    String? badge;
+    var badgeColor = AppColors.danger;
+    switch (id) {
+      case 'builders_hut':
+        if (f.busy > 0) badge = '${f.busy}';
+      case 'army_camp':
+        if (f.claimable) badge = '!';
+      case 'treasury':
+        if (f.treasuryReady) {
+          badge = r'$';
+          badgeColor = const Color(0xFF3FAE73);
+        }
+      case 'shop':
+        if (f.affordable.isNotEmpty) {
+          badge = 'NEW';
+          badgeColor = AppColors.gem;
+        }
+    }
+    if (st.upgrading) {
+      badge = '${EconomyEngine.daysLeft(s, id)}d';
+      badgeColor = const Color(0xFF4C7BE0);
+    }
+    final hasLevel = Catalog.buildingById.containsKey(id);
+    // Buildings grow a little with every level.
+    final sc = spot.scale * (1 + 0.025 * (st.level - 1)).clamp(1.0, 1.3);
+    final w = spot.size.width * sc, h = spot.size.height * sc;
+    return _Sprite(
+      spot.anchor.dy,
+      Positioned(
+        key: ValueKey('bld_$id'),
+        left: spot.anchor.dx - spot.pivot.dx * sc,
+        top: spot.anchor.dy - spot.pivot.dy * sc,
+        width: w,
+        height: h,
+        child: _BuildingSprite(
+          id: id,
+          label: hasLevel ? '${spot.name}  ${st.level}' : spot.name,
+          badge: badge,
+          badgeColor: badgeColor,
+          snow: season.snowOnRoofs,
+          upgrading: st.upgrading,
+          time: _time,
+          labelTop: spot.pivot.dy * sc + 4,
+          onTap: () => _openBuilding(id),
+        ),
+      ),
+    );
+  }
+
+  _Sprite _heroSprite({
+    required String key,
+    required String slug,
+    required Offset ground,
+    required RigAnim anim,
+    required VoidCallback onTap,
+    Color? glow,
+  }) =>
+      _Sprite(
+        ground.dy,
+        Positioned(
+          key: ValueKey(key),
+          left: ground.dx - _actorW / 2,
+          top: ground.dy - _actorH,
+          child: _Actor(key: Key(key), slug: slug, anim: anim, glow: glow, time: _time, onTap: onTap),
+        ),
+      );
 }
 
-class _CloudPainter extends CustomPainter {
-  _CloudPainter(this.v, this.k);
-  final double v;
-  final double k;
+class _Sprite {
+  const _Sprite(this.baseline, this.widget);
+  final double baseline;
+  final Widget widget;
+}
+
+const _actorW = 51.0;
+const _actorH = 58.8;
+
+// ---------------------------------------------------------------------------
+// Sprites
+// ---------------------------------------------------------------------------
+
+class _BuildingSprite extends StatefulWidget {
+  const _BuildingSprite({
+    required this.id,
+    required this.label,
+    required this.badge,
+    required this.badgeColor,
+    required this.snow,
+    required this.upgrading,
+    required this.time,
+    required this.labelTop,
+    required this.onTap,
+  });
+
+  final String id;
+  final String label;
+  final String? badge;
+  final Color badgeColor;
+  final bool snow;
+  final bool upgrading;
+  final ValueNotifier<double> time;
+  final double labelTop;
+  final VoidCallback onTap;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()..color = const Color(0x1A000000);
-    final span = size.width + 300 * k;
-    for (var i = 0; i < 3; i++) {
-      final f = (v * (1 + i) + i * .33) % 1;
-      final x = -150 * k + f * span;
-      final y = size.height * (0.26 + i * 0.24);
-      canvas.drawOval(
-          Rect.fromCenter(center: Offset(x, y), width: 110 * k, height: 34 * k), p);
-      canvas.drawOval(
-          Rect.fromCenter(
-              center: Offset(x + 30 * k, y - 8 * k), width: 70 * k, height: 30 * k),
-          p);
-    }
+  State<_BuildingSprite> createState() => _BuildingSpriteState();
+}
+
+class _BuildingSpriteState extends State<_BuildingSprite> with SingleTickerProviderStateMixin {
+  late final AnimationController _press =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 260));
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
+
+  Future<void> _tap() async {
+    HapticFeedback.selectionClick();
+    if (CharacterRig.enableAnimation) await _press.forward(from: 0);
+    if (mounted) widget.onTap();
   }
 
   @override
-  bool shouldRepaint(_CloudPainter old) => old.v != v || old.k != k;
-}
-
-/// Meadow, flowers and trees outside the main stage.
-class _MarginPainter extends CustomPainter {
-  _MarginPainter(this.stage, this.k);
-  final Rect stage;
-  final double k;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rnd = math.Random(11);
-    final tuft = Paint()..color = const Color(0x2233691F);
-    final flowers = [Colors.white, const Color(0xFFFFE27A), const Color(0xFFFF9EC4)];
-    for (var i = 0; i < 160; i++) {
-      final p = Offset(rnd.nextDouble() * size.width, rnd.nextDouble() * size.height);
-      if (stage.inflate(-2).contains(p)) continue;
-      if (i % 5 == 0) {
-        canvas.drawCircle(p, 2.2 * k.clamp(.8, 2), Paint()..color = flowers[i % 3]);
-      } else {
-        canvas.drawOval(Rect.fromCenter(center: p, width: 16 * k, height: 6 * k), tuft);
-      }
-    }
-    final step = 96 * k;
-    final line = Paint()
-      ..color = AppColors.outline
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    for (var y = 20.0; y < size.height; y += step) {
-      for (var x = 8.0; x < size.width; x += step) {
-        final c = Offset(x + rnd.nextDouble() * step * .6,
-            y + rnd.nextDouble() * step * .6);
-        final r = (18 + rnd.nextDouble() * 6) * k;
-        if (stage.inflate(r).contains(c)) continue;
-        canvas.drawRect(
-            Rect.fromLTWH(c.dx - r * .18, c.dy + r * .5, r * .36, r * .9),
-            Paint()..color = AppColors.woodDark);
-        canvas.drawCircle(c, r, Paint()..color = const Color(0xFF2F7A25));
-        canvas.drawCircle(c, r, line);
-        canvas.drawCircle(c.translate(-r * .25, -r * .25), r * .55,
-            Paint()..color = const Color(0xFF4DAA3A));
-      }
-    }
+  Widget build(BuildContext context) {
+    final art = Stack(fit: StackFit.expand, children: [
+      SvgPicture.asset('assets/buildings/${widget.id}.svg', fit: BoxFit.fill),
+      if (widget.snow)
+        SvgPicture.asset('assets/buildings/${widget.id}_snow.svg', fit: BoxFit.fill),
+    ]);
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: _tap,
+      child: Stack(clipBehavior: Clip.none, children: [
+        Positioned.fill(
+          child: AnimatedBuilder(
+            animation: _press,
+            child: art,
+            builder: (_, child) {
+              // Squash on press, spring back up.
+              final t = _press.value;
+              final k = t < 0.4
+                  ? -0.07 * (t / 0.4)
+                  : -0.07 + 0.11 * math.sin((t - 0.4) / 0.6 * math.pi);
+              return Transform(
+                alignment: Alignment.bottomCenter,
+                transform: Matrix4.diagonal3Values(1 - k * 0.5, 1 + k, 1),
+                child: child,
+              );
+            },
+          ),
+        ),
+        Positioned(
+          left: -40,
+          right: -40,
+          top: widget.labelTop,
+          child: Center(child: _Plate(widget.label)),
+        ),
+        if (widget.badge != null)
+          Positioned(
+            right: 6,
+            top: 4,
+            child: ValueListenableBuilder<double>(
+              valueListenable: widget.time,
+              builder: (_, t, child) => Transform.translate(
+                offset: Offset(0, -3 * (math.sin(t * 3) + 1) / 2),
+                child: child,
+              ),
+              child: _Badge(widget.badge!, widget.badgeColor),
+            ),
+          ),
+        if (widget.upgrading)
+          Positioned(
+            left: 4,
+            top: 6,
+            child: ValueListenableBuilder<double>(
+              valueListenable: widget.time,
+              builder: (_, t, child) => Transform.rotate(
+                angle: -0.5 + 0.6 * math.max(0, math.sin(t * 6)),
+                alignment: Alignment.bottomRight,
+                child: child,
+              ),
+              child: const _RoundIcon(Icons.hardware_rounded, Color(0xFF4C7BE0)),
+            ),
+          ),
+      ]),
+    );
   }
-
-  @override
-  bool shouldRepaint(_MarginPainter old) => old.stage != stage;
 }
 
-/// Opens a chest and shows the reward (shared with the old home screen).
-Future<void> openChestDialog(
-    BuildContext context, WidgetRef ref, String type) async {
+/// Name plate under a building.
+class _Plate extends StatelessWidget {
+  const _Plate(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2.5),
+        decoration: BoxDecoration(
+          color: const Color(0xCC12151E),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        ),
+        child: Text(text,
+            maxLines: 1,
+            style: AppText.body(10.5, color: Colors.white, weight: FontWeight.w800)
+                .copyWith(letterSpacing: 0.2)),
+      );
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge(this.label, this.color);
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8)],
+        ),
+        child: Text(label,
+            style: AppText.body(11.5, color: Colors.white, weight: FontWeight.w900)),
+      );
+}
+
+class _RoundIcon extends StatelessWidget {
+  const _RoundIcon(this.icon, this.color);
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: Icon(icon, size: 15, color: Colors.white),
+      );
+}
+
+class _Bubble extends StatelessWidget {
+  const _Bubble(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        constraints: const BoxConstraints(maxWidth: 190),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xF2FFFDF7),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xB31A1622), width: 1.2),
+          boxShadow: const [
+            BoxShadow(color: Color(0x40000000), blurRadius: 8, offset: Offset(0, 3))
+          ],
+        ),
+        child: Text(text,
+            textAlign: TextAlign.center,
+            style: AppText.body(11, color: const Color(0xFF1C2233), weight: FontWeight.w800)),
+      );
+}
+
+class _FirePuff extends StatelessWidget {
+  const _FirePuff({required this.progress, required this.skin});
+  final double progress;
+  final String skin;
+
+  @override
+  Widget build(BuildContext context) {
+    final cols = switch (skin) {
+      'dragon_frost' => const [Color(0xFFFFFFFF), Color(0xFF9DE6FF), Color(0xFF3F88B8)],
+      'dragon_shadow' => const [Color(0xFFF2D6FF), Color(0xFFB26BFF), Color(0xFF4A1F8A)],
+      'dragon_verdant' => const [Color(0xFFF4FFC4), Color(0xFF9BE05E), Color(0xFF3F8A33)],
+      _ => const [Color(0xFFFFF6C2), Color(0xFFFFB43A), Color(0xFFE5482A)],
+    };
+    final p = progress;
+    final fade = p < 0.2 ? p / 0.2 : (1 - (p - 0.2) / 0.8);
+    return SizedBox(
+      width: 70,
+      height: 40,
+      child: Stack(clipBehavior: Clip.none, children: [
+        for (var i = 0; i < 6; i++)
+          Positioned(
+            left: p * 50 * (0.4 + i * 0.13),
+            top: 14 - 6 * math.sin(i * 1.7) * p,
+            child: Opacity(
+              opacity: (fade * (1 - i * 0.1)).clamp(0.0, 1.0),
+              child: Container(
+                width: 10 + 14 * p * (1 - i * 0.08),
+                height: 10 + 14 * p * (1 - i * 0.08),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                      colors: [cols[0], cols[1], cols[2].withValues(alpha: 0)]),
+                ),
+              ),
+            ),
+          ),
+      ]),
+    );
+  }
+}
+
+class _MapButton extends StatelessWidget {
+  const _MapButton(
+      {super.key, required this.icon, required this.tooltip, required this.onTap});
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: tooltip,
+        child: Material(
+          color: const Color(0xCC12151E),
+          shape: CircleBorder(side: BorderSide(color: Colors.white.withValues(alpha: 0.16))),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
+            child: SizedBox(
+                width: 44, height: 44, child: Icon(icon, color: Colors.white, size: 21)),
+          ),
+        ),
+      );
+}
+
+class _RegionSign extends StatelessWidget {
+  const _RegionSign({required this.region, required this.locked, required this.onTap});
+  final WorldRegion region;
+  final bool locked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
+          decoration: BoxDecoration(
+            color: locked ? const Color(0xE612151E) : const Color(0x9912151E),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: locked ? const Color(0x99E8B84A) : Colors.white.withValues(alpha: 0.2)),
+            boxShadow: const [
+              BoxShadow(color: Color(0x55000000), blurRadius: 10, offset: Offset(0, 4))
+            ],
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(locked ? Icons.lock_rounded : Icons.explore_rounded,
+                size: 16, color: locked ? const Color(0xFFE8B84A) : Colors.white),
+            const SizedBox(width: 6),
+            Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(region.name,
+                      style: AppText.body(12, color: Colors.white, weight: FontWeight.w900)),
+                  if (locked)
+                    Text('Level ${region.unlockLevel}',
+                        style: AppText.body(10,
+                            color: const Color(0xFFE8B84A), weight: FontWeight.w800)),
+                ]),
+          ]),
+        ),
+      );
+}
+
+/// Opens a chest and shows the reward.
+Future<void> openChestDialog(BuildContext context, WidgetRef ref, String type) async {
   final r = ref.read(gameProvider.notifier).openChest(type);
   if (r == null || !context.mounted) return;
   final item = r.itemId == null ? null : Catalog.byId[r.itemId!];
@@ -449,7 +908,7 @@ Future<void> openChestDialog(
         decoration: BoxDecoration(
           color: AppColors.panel,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.outline, width: 4),
+          border: Border.all(color: AppColors.outline, width: AppColors.palette.stroke + 1),
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('Chest opened!',
@@ -464,393 +923,17 @@ Future<void> openChestDialog(
               child: rigSlugForItemId(item.id) == null
                   ? const SizedBox()
                   : CharacterRig(
-                      slug: rigSlugForItemId(item.id)!,
-                      height: 96,
-                      anim: RigAnim.celebrate),
+                      slug: rigSlugForItemId(item.id)!, height: 96, anim: RigAnim.celebrate),
             ),
             Text('New hero: ${item.name}!', style: AppText.body(16)),
           ],
           const SizedBox(height: 14),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Great!')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Great!')),
         ]),
       ),
     ),
   );
 }
-
-// ---------------------------------------------------------------------------
-// Ground
-// ---------------------------------------------------------------------------
-
-class _Ground extends StatelessWidget {
-  const _Ground();
-
-  @override
-  Widget build(BuildContext context) => const CustomPaint(painter: _GroundPainter());
-}
-
-class _GroundPainter extends CustomPainter {
-  const _GroundPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    canvas.drawRect(
-        rect,
-        Paint()
-          ..shader = const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF8CCC4D), Color(0xFF70BF3B), Color(0xFF549E2E)],
-          ).createShader(rect));
-
-    // Grass tufts.
-    final rnd = math.Random(7);
-    final tuft = Paint()..color = const Color(0x2233691F);
-    for (var i = 0; i < 70; i++) {
-      final x = rnd.nextDouble() * size.width;
-      final y = rnd.nextDouble() * size.height;
-      canvas.drawOval(Rect.fromCenter(center: Offset(x, y), width: 16, height: 6), tuft);
-    }
-    final flower = [Colors.white, const Color(0xFFFFE27A), const Color(0xFFFF9EC4)];
-    for (var i = 0; i < 26; i++) {
-      canvas.drawCircle(
-          Offset(rnd.nextDouble() * size.width, rnd.nextDouble() * size.height),
-          2.2,
-          Paint()..color = flower[i % 3]);
-    }
-
-    // Paths from the plaza to every building.
-    const plaza = Offset(197, 478);
-    const targets = [
-      Offset(195, 410), // keep gate
-      Offset(98, 460), // hut
-      Offset(300, 450), // camp
-      Offset(83, 312), // lab
-      Offset(314, 312), // treasury
-      Offset(300, 640), // castle
-      Offset(92, 646), // shop
-      Offset(195, 700), // magic items
-    ];
-    final edge = Paint()
-      ..color = const Color(0xFFA9763F)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 24
-      ..strokeCap = StrokeCap.round;
-    final fill = Paint()
-      ..color = AppColors.path
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 18
-      ..strokeCap = StrokeCap.round;
-    for (final t in targets) {
-      final p = Path()
-        ..moveTo(plaza.dx, plaza.dy)
-        ..quadraticBezierTo((plaza.dx + t.dx) / 2 + (t.dy - plaza.dy) * 0.08,
-            (plaza.dy + t.dy) / 2, t.dx, t.dy);
-      canvas.drawPath(p, edge);
-    }
-    for (final t in targets) {
-      final p = Path()
-        ..moveTo(plaza.dx, plaza.dy)
-        ..quadraticBezierTo((plaza.dx + t.dx) / 2 + (t.dy - plaza.dy) * 0.08,
-            (plaza.dy + t.dy) / 2, t.dx, t.dy);
-      canvas.drawPath(p, fill);
-    }
-
-    // Plaza (stone ring with a path-coloured centre).
-    final pr = Rect.fromCenter(center: plaza, width: 132, height: 84);
-    canvas.drawOval(pr.inflate(5), Paint()..color = AppColors.outline);
-    canvas.drawOval(pr, Paint()..color = AppColors.stone);
-    canvas.drawOval(pr.deflate(10), Paint()..color = const Color(0xFFE2D9C2));
-
-    // Pond.
-    final pond = Rect.fromLTWH(30, 690, 100, 56);
-    canvas.drawOval(pond.inflate(4), Paint()..color = AppColors.outline);
-    canvas.drawOval(pond, Paint()..color = const Color(0xFF4FB6F0));
-    canvas.drawOval(pond.deflate(8), Paint()..color = const Color(0xFF79CFFA));
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
-}
-
-// ---------------------------------------------------------------------------
-// Ambient life: clouds, ripples, fireflies, sparkles
-// ---------------------------------------------------------------------------
-
-class _Ambient extends StatelessWidget {
-  const _Ambient({required this.t, required this.treasury});
-  final Animation<double> t;
-  final int treasury;
-
-  @override
-  Widget build(BuildContext context) => IgnorePointer(
-        child: AnimatedBuilder(
-          animation: t,
-          builder: (_, __) => CustomPaint(painter: _AmbientPainter(t.value)),
-        ),
-      );
-}
-
-class _AmbientPainter extends CustomPainter {
-  _AmbientPainter(this.v);
-  final double v;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final a = v * 2 * math.pi;
-
-    // Pond ripples.
-    for (var i = 0; i < 2; i++) {
-      final k = ((v * 4 + i * .5) % 1);
-      canvas.drawOval(
-          Rect.fromCenter(
-              center: const Offset(80, 718), width: 20 + 50 * k, height: 8 + 20 * k),
-          Paint()
-            ..color = Colors.white.withOpacity(.6 * (1 - k))
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5);
-    }
-
-    // Fireflies / sparkles drifting around the village.
-    for (var i = 0; i < 14; i++) {
-      final bx = (i * 97 + 31) % 370 + 10.0;
-      final by = (i * 151 + 120) % 640 + 100.0;
-      final ph = a * (1 + i % 3) + i;
-      final x = bx + 10 * math.sin(ph);
-      final y = by + 8 * math.cos(ph * .8);
-      final tw = (math.sin(a * 6 + i * 1.3) + 1) / 2;
-      canvas.drawCircle(Offset(x, y), 3.2 * tw + 1,
-          Paint()..color = const Color(0xFFFFF3A8).withOpacity(.25 + .6 * tw));
-    }
-  }
-
-  @override
-  bool shouldRepaint(_AmbientPainter old) => old.v != v;
-}
-
-// ---------------------------------------------------------------------------
-// Sprites
-// ---------------------------------------------------------------------------
-
-class _Sway extends StatelessWidget {
-  const _Sway({required this.t, required this.phase, required this.child});
-  final Animation<double> t;
-  final double phase;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: t,
-        child: child,
-        builder: (_, c) => Transform.rotate(
-          angle: 0.045 * math.sin(t.value * 2 * math.pi * 12 + phase),
-          alignment: Alignment.bottomCenter,
-          child: c,
-        ),
-      );
-}
-
-class _BuildingSprite extends StatefulWidget {
-  const _BuildingSprite({
-    super.key,
-    required this.art,
-    required this.label,
-    required this.t,
-    required this.onTap,
-    this.badge,
-    this.badgeColor = AppColors.danger,
-    this.upgrading = false,
-    this.smoke = false,
-    this.flag = false,
-  });
-
-  final BuildingArt art;
-  final String label;
-  final String? badge;
-  final Color badgeColor;
-  final Animation<double> t;
-  final bool upgrading;
-  final bool smoke;
-  final bool flag;
-  final VoidCallback onTap;
-
-  @override
-  State<_BuildingSprite> createState() => _BuildingSpriteState();
-}
-
-class _BuildingSpriteState extends State<_BuildingSprite> {
-  bool _down = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final a = widget.art;
-    const plateH = 22.0;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => setState(() => _down = true),
-      onTapCancel: () => setState(() => _down = false),
-      onTapUp: (_) => setState(() => _down = false),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _down ? 0.95 : 1,
-        duration: const Duration(milliseconds: 90),
-        alignment: Alignment.bottomCenter,
-        child: SizedBox(
-          width: a.size.width,
-          height: a.size.height + plateH,
-          child: Stack(clipBehavior: Clip.none, children: [
-            Positioned(
-              left: 0,
-              top: 0,
-              width: a.size.width,
-              height: a.size.height,
-              child: Stack(clipBehavior: Clip.none, children: [
-                ...a.build(),
-                if (widget.flag)
-                  Positioned(
-                    left: 75,
-                    top: -22,
-                    child: AnimatedBuilder(
-                      animation: widget.t,
-                      builder: (_, __) => Transform(
-                        alignment: Alignment.centerLeft,
-                        transform: Matrix4.diagonal3Values(1 + 0.18 * math.sin(widget.t.value * 2 * math.pi * 40), 1, 1),
-                        child: const CustomPaint(
-                            size: Size(22, 12), painter: _FlagPainter()),
-                      ),
-                    ),
-                  ),
-                if (widget.smoke) _Smoke(t: widget.t),
-                if (widget.upgrading) _Hammer(t: widget.t, w: a.size.width),
-              ]),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              top: a.size.height - 2,
-              child: Center(child: NamePlate(widget.label)),
-            ),
-            if (widget.badge != null)
-              Positioned(
-                right: -4,
-                top: -8,
-                child: _Pulse(
-                    t: widget.t,
-                    child: VillageBadge(widget.badge!, widget.badgeColor)),
-              ),
-          ]),
-        ),
-      ),
-    );
-  }
-}
-
-class _FlagPainter extends CustomPainter {
-  const _FlagPainter();
-  @override
-  void paint(Canvas canvas, Size s) {
-    final p = Path()
-      ..moveTo(0, 0)
-      ..lineTo(s.width, s.height / 2)
-      ..lineTo(0, s.height)
-      ..close();
-    canvas.drawPath(p, Paint()..color = AppColors.danger);
-    canvas.drawPath(
-        p,
-        Paint()
-          ..color = AppColors.outline
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2);
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
-}
-
-class _Smoke extends StatelessWidget {
-  const _Smoke({required this.t});
-  final Animation<double> t;
-
-  @override
-  Widget build(BuildContext context) => Positioned(
-        left: 70,
-        top: -44,
-        child: IgnorePointer(
-          child: AnimatedBuilder(
-            animation: t,
-            builder: (_, __) => SizedBox(
-              width: 40,
-              height: 50,
-              child: CustomPaint(painter: _SmokePainter(t.value)),
-            ),
-          ),
-        ),
-      );
-}
-
-class _SmokePainter extends CustomPainter {
-  _SmokePainter(this.v);
-  final double v;
-  @override
-  void paint(Canvas canvas, Size s) {
-    for (var i = 0; i < 3; i++) {
-      final k = (v * 24 / 3 * 1 + i / 3) % 1; // ~8 puffs per loop
-      final y = s.height * (1 - k);
-      final x = 14 + 8 * math.sin(k * 5 + i);
-      canvas.drawCircle(
-          Offset(x, y),
-          4 + 7 * k,
-          Paint()..color = Colors.white.withOpacity(.75 * (1 - k)));
-    }
-  }
-
-  @override
-  bool shouldRepaint(_SmokePainter old) => old.v != v;
-}
-
-class _Hammer extends StatelessWidget {
-  const _Hammer({required this.t, required this.w});
-  final Animation<double> t;
-  final double w;
-
-  @override
-  Widget build(BuildContext context) => Positioned(
-        left: w / 2 - 14,
-        top: 6,
-        child: IgnorePointer(
-          child: AnimatedBuilder(
-            animation: t,
-            builder: (_, __) => Transform.rotate(
-              angle: -0.5 + 0.7 * math.sin(t.value * 2 * math.pi * 60).abs(),
-              alignment: Alignment.bottomRight,
-              child: const Icon(Icons.hardware,
-                  size: 28,
-                  color: Colors.white,
-                  shadows: [Shadow(color: AppColors.outline, blurRadius: 3)]),
-            ),
-          ),
-        ),
-      );
-}
-
-class _Pulse extends StatelessWidget {
-  const _Pulse({required this.t, required this.child});
-  final Animation<double> t;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: t,
-        child: child,
-        builder: (_, c) => Transform.scale(
-            scale: 1 + 0.1 * math.sin(t.value * 2 * math.pi * 48), child: c),
-      );
-}
-
-const _actorW = 51.0;
-const _actorH = 58.8;
 
 class _Actor extends StatelessWidget {
   const _Actor({
@@ -858,15 +941,15 @@ class _Actor extends StatelessWidget {
     required this.slug,
     required this.anim,
     required this.onTap,
+    required this.time,
     this.glow,
-    this.t,
   });
 
   final String slug;
   final RigAnim anim;
   final VoidCallback onTap;
   final Color? glow;
-  final Animation<double>? t;
+  final ValueNotifier<double> time;
 
   @override
   Widget build(BuildContext context) {
@@ -876,14 +959,14 @@ class _Actor extends StatelessWidget {
       child: SizedBox(
         width: _actorW,
         height: _actorH,
-        child: Stack(alignment: Alignment.bottomCenter, children: [
-          if (glow != null && t != null)
+        child: Stack(alignment: Alignment.bottomCenter, clipBehavior: Clip.none, children: [
+          if (glow != null)
             Positioned(
               bottom: -2,
-              child: AnimatedBuilder(
-                animation: t!,
-                builder: (_, __) {
-                  final k = (math.sin(t!.value * 2 * math.pi * 36) + 1) / 2;
+              child: ValueListenableBuilder<double>(
+                valueListenable: time,
+                builder: (_, t, __) {
+                  final k = (math.sin(t * 2.4) + 1) / 2;
                   return Container(
                     width: 58 + 6 * k,
                     height: 16 + 2 * k,
@@ -891,7 +974,7 @@ class _Actor extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                            color: glow!.withOpacity(.35 + .3 * k),
+                            color: glow!.withValues(alpha: .35 + .3 * k),
                             blurRadius: 14,
                             spreadRadius: 3)
                       ],
@@ -907,12 +990,11 @@ class _Actor extends StatelessWidget {
   }
 }
 
-/// A hero that strolls back and forth around its spot.
+/// A resident hero that strolls back and forth around its spot.
 class _Wanderer extends StatelessWidget {
   const _Wanderer({
-    super.key,
     required this.slug,
-    required this.t,
+    required this.time,
     required this.phase,
     required this.amp,
     required this.walks,
@@ -920,7 +1002,7 @@ class _Wanderer extends StatelessWidget {
   });
 
   final String slug;
-  final Animation<double> t;
+  final ValueNotifier<double> time;
   final double phase;
   final double amp;
   final bool walks;
@@ -928,30 +1010,22 @@ class _Wanderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: t,
-      builder: (_, __) {
-        final p = (t.value * 12 + phase) * 2 * math.pi;
+    final rig = SizedBox(
+      width: _actorW,
+      height: _actorH,
+      child: CharacterRig(
+          slug: slug, height: _actorH, anim: walks ? RigAnim.walk : RigAnim.idle),
+    );
+    return ValueListenableBuilder<double>(
+      valueListenable: time,
+      child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: onTap, child: rig),
+      builder: (_, t, child) {
+        final p = t * 0.5 + phase;
         final dx = walks ? amp * math.sin(p) : 0.0;
-        final facingLeft = walks && math.cos(p) < 0;
+        final left = walks && math.cos(p) < 0;
         return Transform.translate(
           offset: Offset(dx, 0),
-          child: Transform.scale(
-            scaleX: facingLeft ? -1 : 1,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onTap,
-              child: SizedBox(
-                width: _actorW,
-                height: _actorH,
-                child: CharacterRig(
-                  slug: slug,
-                  height: _actorH,
-                  anim: walks ? RigAnim.walk : RigAnim.idle,
-                ),
-              ),
-            ),
-          ),
+          child: Transform.flip(flipX: left, child: child),
         );
       },
     );
@@ -961,17 +1035,12 @@ class _Wanderer extends StatelessWidget {
 /// The next hero to buy: a dark silhouette on a glowing pedestal with a
 /// price tag that says how far away the goal is.
 class _Teaser extends StatelessWidget {
-  const _Teaser({
-    super.key,
-    required this.item,
-    required this.state,
-    required this.t,
-    required this.onTap,
-  });
+  const _Teaser(
+      {required this.item, required this.state, required this.time, required this.onTap});
 
   final ShopItem item;
   final GameState state;
-  final Animation<double> t;
+  final ValueNotifier<double> time;
   final VoidCallback onTap;
 
   @override
@@ -984,34 +1053,30 @@ class _Teaser extends StatelessWidget {
     final unit = useGold ? 'gold' : 'gems';
     final color = rarityOf(item.rarity).color;
     final text = affordable ? 'Tap to unlock!' : '${price - have} $unit to go';
-
-    return Transform.scale(
-      scale: 0.85,
-      alignment: Alignment.bottomCenter,
-      child: GestureDetector(
+    return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: SizedBox(
         width: 74,
         height: 96,
-        child: AnimatedBuilder(
-          animation: t,
-          builder: (_, __) {
-            final k = (math.sin(t.value * 2 * math.pi * 30) + 1) / 2;
+        child: ValueListenableBuilder<double>(
+          valueListenable: time,
+          builder: (_, t, __) {
+            final k = (math.sin(t * 2.6) + 1) / 2;
             return Stack(alignment: Alignment.topCenter, clipBehavior: Clip.none, children: [
-              // pedestal glow
               Positioned(
                 bottom: 6,
                 child: Container(
-                  width: 62,
-                  height: 20,
+                  width: 58,
+                  height: 18,
                   decoration: BoxDecoration(
-                    color: AppColors.stone,
+                    gradient:
+                        const LinearGradient(colors: [Color(0xFFE9E1D0), Color(0xFF8E826C)]),
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.outline, width: 2.5),
+                    border: Border.all(color: const Color(0xFF1A1622), width: 1.6),
                     boxShadow: [
                       BoxShadow(
-                          color: color.withOpacity(affordable ? .5 + .4 * k : .25),
+                          color: color.withValues(alpha: affordable ? .5 + .4 * k : .3),
                           blurRadius: 14 + 6 * k,
                           spreadRadius: 2)
                     ],
@@ -1026,38 +1091,35 @@ class _Teaser extends StatelessWidget {
                         colorFilter: ColorFilter.mode(
                             affordable
                                 ? Colors.transparent
-                                : const Color(0xFF1A1030).withOpacity(.86),
+                                : const Color(0xFF1A1030).withValues(alpha: .86),
                             affordable ? BlendMode.dst : BlendMode.srcATop),
                         child: CharacterRig(
                             slug: slug,
-                            height: 58,
+                            height: 56,
                             anim: affordable ? RigAnim.jump : RigAnim.idle),
                       ),
               ),
               if (!affordable)
                 Positioned(
-                  top: 6 - 3 * k,
-                  child: Text('?',
-                      style: AppText.heading(24, color: AppColors.gold)),
+                  top: 4 - 3 * k,
+                  child: Text('?', style: AppText.heading(22, color: AppColors.gold)),
                 ),
               Positioned(
-                bottom: -8,
+                bottom: -10,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
-                    color: affordable ? AppColors.success : AppColors.panelDeep,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.outline, width: 2),
+                    color: affordable ? const Color(0xFF3FAE73) : const Color(0xE612151E),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                   ),
                   child: Text(text,
-                      style: AppText.body(10,
-                          color: Colors.white, weight: FontWeight.w800)),
+                      style: AppText.body(9.5, color: Colors.white, weight: FontWeight.w800)),
                 ),
               ),
             ]);
           },
         ),
-      ),
       ),
     );
   }
@@ -1065,17 +1127,16 @@ class _Teaser extends StatelessWidget {
 
 class _Chest extends StatelessWidget {
   const _Chest({
-    super.key,
     required this.type,
     required this.count,
-    required this.t,
+    required this.time,
     required this.phase,
     required this.onTap,
   });
 
   final String type;
   final int count;
-  final Animation<double> t;
+  final ValueNotifier<double> time;
   final double phase;
   final VoidCallback onTap;
 
@@ -1088,65 +1149,69 @@ class _Chest extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const ink = Color(0xFF1A1622);
+    final chest = SizedBox(
+      width: 44,
+      height: 44,
+      child: Stack(clipBehavior: Clip.none, children: [
+        Positioned(
+          left: 2,
+          top: 14,
+          width: 40,
+          height: 28,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF8A5A2E), Color(0xFF4F3118)]),
+              borderRadius: BorderRadius.circular(5),
+              border: Border.all(color: ink, width: 2),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 2,
+          top: 6,
+          width: 40,
+          height: 16,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color.lerp(_color, Colors.white, 0.35)!, _color]),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              border: Border.all(color: ink, width: 2),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 18,
+          top: 17,
+          width: 8,
+          height: 10,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.gold,
+              borderRadius: BorderRadius.circular(2),
+              border: Border.all(color: ink, width: 1.4),
+            ),
+          ),
+        ),
+        if (count > 1)
+          Positioned(right: -6, top: -4, child: _Badge('x$count', AppColors.danger)),
+      ]),
+    );
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: AnimatedBuilder(
-        animation: t,
-        builder: (_, __) {
-          final b = math.sin((t.value * 30 + phase) * 2 * math.pi);
-          return Transform.translate(
-            offset: Offset(0, -4 * (b + 1) / 2),
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: Stack(clipBehavior: Clip.none, children: [
-                Positioned(
-                  left: 2,
-                  top: 14,
-                  width: 40,
-                  height: 28,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.woodDark,
-                      borderRadius: BorderRadius.circular(5),
-                      border: Border.all(color: AppColors.outline, width: 2.5),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 2,
-                  top: 6,
-                  width: 40,
-                  height: 16,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: _color,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-                      border: Border.all(color: AppColors.outline, width: 2.5),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 18,
-                  top: 18,
-                  width: 8,
-                  height: 10,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.gold,
-                      border: Border.all(color: AppColors.outline, width: 1.5),
-                    ),
-                  ),
-                ),
-                if (count > 1)
-                  Positioned(
-                      right: -6,
-                      top: -4,
-                      child: VillageBadge('x$count', AppColors.danger)),
-              ]),
-            ),
-          );
+      child: ValueListenableBuilder<double>(
+        valueListenable: time,
+        child: chest,
+        builder: (_, t, child) {
+          final b = math.sin(t * 7.8 + phase * 6);
+          return Transform.translate(offset: Offset(0, -4 * (b + 1) / 2), child: child);
         },
       ),
     );

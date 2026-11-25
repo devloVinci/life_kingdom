@@ -1,0 +1,86 @@
+{
+ "name": "Warden",
+ "slug": "warden",
+ "width": 120,
+ "height": 160,
+ "parts": [
+  {
+   "name": "Ground Shadow",
+   "file": "ground_shadow.svg",
+   "role": "shadow"
+  },
+  {
+   "name": "Cape",
+   "file": "cape.svg",
+   "role": "cape"
+  },
+  {
+   "name": "Leg L",
+   "file": "leg_l.svg",
+   "role": "legL"
+  },
+  {
+   "name": "Leg R",
+   "file": "leg_r.svg",
+   "role": "legR"
+  },
+  {
+   "name": "Arm R",
+   "file": "arm_r.svg",
+   "role": "armR"
+  },
+  {
+   "name": "Body",
+   "file": "body.svg",
+   "role": "body"
+  },
+  {
+   "name": "Head",
+   "file": "head.svg",
+   "role": "head"
+  },
+  {
+   "name": "Arm L",
+   "file": "arm_l.svg",
+   "role": "armL"
+  }
+ ],
+ "pivots": {
+  "shadow": [
+   60,
+   150
+  ],
+  "cape": [
+   60,
+   62
+  ],
+  "legL": [
+   53,
+   104
+  ],
+  "legR": [
+   67,
+   104
+  ],
+  "body": [
+   60,
+   104
+  ],
+  "head": [
+   60,
+   57
+  ],
+  "armL": [
+   42,
+   66
+  ],
+  "armR": [
+   79,
+   66
+  ],
+  "root": [
+   60,
+   150
+  ]
+ }
+}

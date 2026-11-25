@@ -68,7 +68,7 @@ class CompanionsScreen extends ConsumerWidget {
             Row(children: [
               IconButton(
                 tooltip: 'Back',
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
                 onPressed: () => context.pop(),
               ),
               Expanded(child: Text('Companions', style: AppText.heading(26))),
@@ -86,7 +86,7 @@ class CompanionsScreen extends ConsumerWidget {
             if (next != null)
               GamePanel(
                 child: Row(children: [
-                  const Icon(Icons.lock, color: AppColors.outline),
+                  Icon(Icons.lock, color: AppColors.outline),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text('Next slot opens at Army Camp level $next.',
@@ -159,7 +159,7 @@ class _EmptySlot extends StatelessWidget {
         child: SizedBox(
           height: 72,
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(Icons.add_circle_outline, color: AppColors.panelPrimary),
+            Icon(Icons.add_circle_outline, color: AppColors.panelPrimary),
             const SizedBox(width: 8),
             Text('Add a companion', style: AppText.headingPlain(16)),
           ]),

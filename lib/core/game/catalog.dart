@@ -1,4 +1,6 @@
-enum ItemType { character, title, background }
+/// Shop item kinds. The enum name is also the equip slot in
+/// `GameState.equipped`.
+enum ItemType { character, title, background, uiTheme, season, dragonSkin }
 
 enum ItemRarity { common, rare, epic, legendary }
 
@@ -96,7 +98,35 @@ class Catalog {
     ShopItem(id: 'bg_sunset', type: ItemType.background, name: 'Sunset', rarity: ItemRarity.rare, goldPrice: 400, gradient: [0xFFFF8A4C, 0xFFFFD58A], description: 'Golden hour.'),
     ShopItem(id: 'bg_night', type: ItemType.background, name: 'Starry Night', rarity: ItemRarity.epic, goldPrice: 900, gemPrice: 20, gradient: [0xFF12306A, 0xFF4B63C7], description: 'A calm night sky.'),
     ShopItem(id: 'bg_royal', type: ItemType.background, name: 'Royal Purple', rarity: ItemRarity.legendary, gemPrice: 80, gradient: [0xFF6B2FB3, 0xFFE0A8FF], description: 'Fit for a king.'),
+
+    // Interface themes (starter themes are owned by everyone).
+    ShopItem(id: 'ui_obsidian', type: ItemType.uiTheme, name: 'Obsidian', rarity: ItemRarity.common, description: 'Dark, calm and focused. Gold highlights.'),
+    ShopItem(id: 'ui_ivory', type: ItemType.uiTheme, name: 'Ivory', rarity: ItemRarity.common, description: 'Light and airy, like a fresh page.'),
+    ShopItem(id: 'ui_classic', type: ItemType.uiTheme, name: 'Kingdom Classic', rarity: ItemRarity.common, description: 'The original bold cartoon look.'),
+    ShopItem(id: 'ui_arcane', type: ItemType.uiTheme, name: 'Arcane', rarity: ItemRarity.epic, goldPrice: 800, gemPrice: 15, description: 'Midnight blues and glowing runes.'),
+
+    // World seasons.
+    ShopItem(id: 'season_summer', type: ItemType.season, name: 'High Summer', rarity: ItemRarity.common, description: 'Warm light, lush trees and lazy pollen.'),
+    ShopItem(id: 'season_spring', type: ItemType.season, name: 'Spring Bloom', rarity: ItemRarity.rare, goldPrice: 300, description: 'Cherry blossoms and drifting petals.'),
+    ShopItem(id: 'season_autumn', type: ItemType.season, name: 'Golden Autumn', rarity: ItemRarity.rare, goldPrice: 500, description: 'Amber forests and falling leaves.'),
+    ShopItem(id: 'season_winter', type: ItemType.season, name: 'Frostfall', rarity: ItemRarity.epic, goldPrice: 900, gemPrice: 20, description: 'Snowy roofs, frosted pines, quiet snowfall.'),
+
+    // Dragon skins.
+    ShopItem(id: 'dragon_ember', type: ItemType.dragonSkin, name: 'Ember Drake', rarity: ItemRarity.common, description: 'Your loyal fire dragon.'),
+    ShopItem(id: 'dragon_frost', type: ItemType.dragonSkin, name: 'Frost Wyrm', rarity: ItemRarity.rare, goldPrice: 700, description: 'Ice-blue scales that glitter in the sun.'),
+    ShopItem(id: 'dragon_verdant', type: ItemType.dragonSkin, name: 'Verdant Wyvern', rarity: ItemRarity.rare, goldPrice: 700, description: 'A forest guardian with moss-green scales.'),
+    ShopItem(id: 'dragon_shadow', type: ItemType.dragonSkin, name: 'Shadow Drake', rarity: ItemRarity.epic, goldPrice: 1500, gemPrice: 35, description: 'Night-black scales and violet eyes.'),
+    ShopItem(id: 'dragon_gilded', type: ItemType.dragonSkin, name: 'Gilded Sovereign', rarity: ItemRarity.legendary, gemPrice: 120, description: 'Living gold. Only the most dedicated earn it.'),
   ];
+
+  /// Items every player owns from the start (also added to old saves).
+  static const starterIds = {
+    'ui_obsidian',
+    'ui_ivory',
+    'ui_classic',
+    'season_summer',
+    'dragon_ember',
+  };
 
   static final Map<String, ShopItem> byId = {for (final i in items) i.id: i};
 

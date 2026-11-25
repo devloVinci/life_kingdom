@@ -67,7 +67,7 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
             Row(children: [
               IconButton(
                 tooltip: 'Back',
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
                 onPressed: () => context.pop(),
               ),
               Expanded(child: Text(item.name, style: AppText.heading(26))),
@@ -87,7 +87,7 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.lock, size: 18, color: AppColors.outline),
+                        Icon(Icons.lock, size: 18, color: AppColors.outline),
                         const SizedBox(width: 6),
                         Text('Locked', style: AppText.headingPlain(16)),
                       ]),
@@ -116,7 +116,7 @@ class _CharacterDetailScreenState extends ConsumerState<CharacterDetailScreen> {
                       Text('Animations', style: AppText.headingPlain(18)),
                       const SizedBox(height: 8),
                       Wrap(spacing: 8, runSpacing: 8, children: [
-                        for (final a in RigAnim.values)
+                        for (final a in _labels.keys)
                           ChoiceChip(
                             key: Key('anim_${a.name}'),
                             label: Text(_labels[a]!),

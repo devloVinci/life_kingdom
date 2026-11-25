@@ -1,3 +1,4 @@
+import 'catalog.dart';
 import 'game_config.dart';
 
 String dateKeyOf(DateTime d) =>
@@ -308,7 +309,11 @@ class GameState {
   });
 
   static const schemaVersion = 1;
-  static const defaultOwned = {'char_raider', 'char_builder'};
+  static const defaultOwned = {
+    'char_raider',
+    'char_builder',
+    ...Catalog.starterIds,
+  };
   static const defaultEquipped = {'character': 'char_raider'};
 
   final String playerName;
@@ -326,7 +331,8 @@ class GameState {
   /// Owned shop item ids.
   final Set<String> owned;
 
-  /// slot ('character' | 'title' | 'background') -> item id.
+  /// slot ('character' | 'title' | 'background' | 'uiTheme' | 'season' |
+  /// 'dragonSkin') -> item id. Missing slots use the defaults.
   final Map<String, String> equipped;
 
   /// Missing entries mean level 1, idle.
@@ -434,9 +440,11 @@ class GameState {
         streak: StreakState.fromJson(
             Map<String, dynamic>.from(j['streak'] as Map)),
         chests: ((j['chests'] as List?) ?? const []).cast<String>(),
+        // Starter cosmetics are merged into older saves; nothing owned is
+        // ever removed.
         owned: j['owned'] == null
             ? defaultOwned
-            : (j['owned'] as List).cast<String>().toSet(),
+            : {...Catalog.starterIds, ...(j['owned'] as List).cast<String>()},
         equipped: j['equipped'] == null
             ? defaultEquipped
             : Map<String, String>.from(j['equipped'] as Map),

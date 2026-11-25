@@ -63,7 +63,7 @@ class _CalendarStatsState extends ConsumerState<CalendarStatsScreen> {
             Row(children: [
               IconButton(
                 tooltip: 'Back',
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
                 onPressed: () => context.pop(),
               ),
               Expanded(
@@ -188,7 +188,7 @@ class _CalendarStatsState extends ConsumerState<CalendarStatsScreen> {
             const SizedBox(height: 12),
             GamePanel(
               child: Row(children: [
-                const Icon(Icons.ac_unit, color: AppColors.panelLight),
+                Icon(Icons.ac_unit, color: AppColors.panelLight),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../core/game/catalog.dart';
+import '../../core/characters/rig_poses.dart';
+import '../../core/widgets/character_rig.dart';
+import '../../core/widgets/cosmetic_swatches.dart';
 import '../../core/game/economy_engine.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
@@ -21,7 +24,7 @@ class ShopScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(gameProvider);
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: GameBackground(
         child: Column(children: [
           Padding(
@@ -35,13 +38,14 @@ class ShopScreen extends ConsumerWidget {
             ]),
           ),
           TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: AppColors.gold,
+            labelColor: AppColors.onBackground,
+            unselectedLabelColor: AppColors.onBackground.withValues(alpha: 0.6),
+            indicatorColor: AppColors.accent,
             dividerColor: Colors.transparent,
-            labelStyle: AppText.body(14, color: Colors.white),
+            labelStyle: AppText.body(14, color: AppColors.onBackground),
             tabs: const [
               Tab(text: 'Heroes'),
+              Tab(text: 'World'),
               Tab(text: 'Style'),
               Tab(text: 'Rewards'),
             ],
@@ -49,6 +53,7 @@ class ShopScreen extends ConsumerWidget {
           const Expanded(
             child: TabBarView(children: [
               _ItemList(types: [ItemType.character]),
+              _ItemList(types: [ItemType.season, ItemType.dragonSkin, ItemType.uiTheme]),
               _ItemList(types: [ItemType.title, ItemType.background]),
               _RewardsTab(),
             ]),
@@ -72,15 +77,35 @@ class _ItemList extends ConsumerWidget {
         // Hide unowned items that are not for sale (earned titles).
         .where((i) => i.forSale || s.owned.contains(i.id))
         .toList();
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: items.length,
-      itemBuilder: (_, i) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: _ItemCard(item: items[i]),
-      ),
-    );
+    final children = <Widget>[];
+    for (final t in types) {
+      final group = items.where((i) => i.type == t).toList();
+      if (group.isEmpty) continue;
+      if (types.length > 1) {
+        children.add(Padding(
+          padding: const EdgeInsets.fromLTRB(4, 6, 4, 10),
+          child: Text(_sectionTitle(t).toUpperCase(),
+              style: AppText.label(12, color: AppColors.onBackground.withValues(alpha: 0.7))),
+        ));
+      }
+      for (final item in group) {
+        children.add(Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _ItemCard(item: item),
+        ));
+      }
+    }
+    return ListView(padding: const EdgeInsets.all(16), children: children);
   }
+
+  static String _sectionTitle(ItemType t) => switch (t) {
+        ItemType.character => 'Heroes',
+        ItemType.title => 'Titles',
+        ItemType.background => 'Backgrounds',
+        ItemType.uiTheme => 'Interface themes',
+        ItemType.season => 'World seasons',
+        ItemType.dragonSkin => 'Dragon skins',
+      };
 }
 
 class _ItemCard extends ConsumerWidget {
@@ -164,6 +189,19 @@ class _Preview extends StatelessWidget {
           ),
           child: const Icon(Icons.military_tech, color: Colors.white),
         );
+      case ItemType.season:
+        return SizedBox(width: 64, height: 64, child: SeasonSwatch(id: item.id));
+      case ItemType.uiTheme:
+        return SizedBox(width: 64, height: 64, child: ThemeSwatch(id: item.id));
+      case ItemType.dragonSkin:
+        return SizedBox(
+          width: 64,
+          height: 64,
+          child: FittedBox(
+            child: CharacterRig(
+                slug: item.id, height: 64, anim: RigAnim.idle, hiddenRoles: const {'shadow'}),
+          ),
+        );
       case ItemType.background:
         final g = item.gradient!;
         return Container(
@@ -214,29 +252,17 @@ Future<void> showItemPreview(
       final s = ref.watch(gameProvider);
       final owned = s.owned.contains(item.id);
       final equipped = s.equipped[item.slot] == item.id;
-      final big = item.type == ItemType.background
-          ? Container(
-              height: 140,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(item.gradient![0]), Color(item.gradient![1])],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.outline, width: 3),
-              ),
-            )
-          : Container(
-              height: 90,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: rarityOf(item.rarity).color,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.outline, width: 3),
-              ),
-              child: Text(item.name, style: AppText.heading(26)),
-            );
+      final big = switch (item.type) {
+        ItemType.season => SizedBox(height: 150, child: SeasonSwatch(id: item.id, large: true)),
+        ItemType.uiTheme => SizedBox(height: 150, child: ThemeSwatch(id: item.id, large: true)),
+        ItemType.dragonSkin => SizedBox(
+            height: 150,
+            child: Center(
+              child: CharacterRig(slug: item.id, height: 140, anim: RigAnim.look),
+            ),
+          ),
+        _ => _bigPreview(item),
+      };
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -277,6 +303,30 @@ Future<void> showItemPreview(
     }),
   );
 }
+
+Widget _bigPreview(ShopItem item) => item.type == ItemType.background
+          ? Container(
+              height: 140,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(item.gradient![0]), Color(item.gradient![1])],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.outline, width: 3),
+              ),
+            )
+          : Container(
+              height: 90,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: rarityOf(item.rarity).color,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.outline, width: 3),
+              ),
+              child: Text(item.name, style: AppText.heading(26)),
+            );
 
 Future<void> showPurchaseDialog(
     BuildContext context, WidgetRef ref, ShopItem item) async {
@@ -340,7 +390,7 @@ class _RewardsTab extends ConsumerWidget {
         Text('Your own rewards', style: AppText.heading(20)),
         const SizedBox(height: 4),
         Text('Create real-life treats and pay for them with gold.',
-            style: AppText.body(13, color: Colors.white)),
+            style: AppText.body(13, color: AppColors.onBackground)),
         const SizedBox(height: 12),
         if (s.customRewards.isEmpty)
           GamePanel(

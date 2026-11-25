@@ -113,7 +113,7 @@ class QuestDetailScreen extends ConsumerWidget {
             child: Row(children: [
               IconButton(
                 tooltip: 'Back',
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
                 onPressed: () => context.pop(),
               ),
               Expanded(child: Text('Quest', style: AppText.heading(26))),

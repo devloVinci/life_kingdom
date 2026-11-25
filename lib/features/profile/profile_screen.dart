@@ -37,7 +37,7 @@ class ProfileScreen extends ConsumerWidget {
           Row(children: [
             IconButton(
               tooltip: 'Back',
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
               onPressed: () =>
                   context.canPop() ? context.pop() : context.go('/home'),
             ),

@@ -42,7 +42,7 @@ class TasksView extends ConsumerWidget {
               ? '$left rewarded task${left == 1 ? '' : 's'} left today'
               : 'Daily reward limit reached - tasks still count!',
           textAlign: TextAlign.center,
-          style: AppText.body(12, color: Colors.white)),
+          style: AppText.body(12, color: AppColors.onBackground)),
       const SizedBox(height: 12),
       Center(
         child: GameButton(
@@ -56,7 +56,7 @@ class TasksView extends ConsumerWidget {
         Row(children: [
           Expanded(
               child: Text('Completed (${done.length})',
-                  style: AppText.body(14, color: Colors.white))),
+                  style: AppText.body(14, color: AppColors.onBackground))),
           TextButton(
             key: const Key('clear_done'),
             onPressed: () => ref.read(gameProvider.notifier).clearDoneTasks(),

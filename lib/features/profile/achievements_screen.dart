@@ -23,7 +23,7 @@ class AchievementsScreen extends ConsumerWidget {
             Row(children: [
               IconButton(
                 tooltip: 'Back',
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
                 onPressed: () => context.pop(),
               ),
               Expanded(child: Text('Achievements', style: AppText.heading(26))),
@@ -32,7 +32,7 @@ class AchievementsScreen extends ConsumerWidget {
               padding: const EdgeInsets.only(left: 12, bottom: 12),
               child: Text(
                   '${s.achievements.length} of ${AchievementEngine.total} unlocked',
-                  style: AppText.body(14, color: Colors.white)),
+                  style: AppText.body(14, color: AppColors.onBackground)),
             ),
             for (final a in achievementDefs)
               Padding(

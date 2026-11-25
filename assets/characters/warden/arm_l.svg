@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160" viewBox="0 0 120 160" fill="none">
+<defs><linearGradient id="l20" x1="0.371" y1="0.017" x2="0.629" y2="0.983"><stop offset="0" stop-color="#4f7ad1"/><stop offset="0.6" stop-color="#2b4c96"/><stop offset="1" stop-color="#1a2f63"/></linearGradient><linearGradient id="l21" x1="0.329" y1="0.030" x2="0.671" y2="0.970"><stop offset="0" stop-color="#ffe08a"/><stop offset="0.5" stop-color="#e0a93a"/><stop offset="1" stop-color="#9a6a1c"/></linearGradient><linearGradient id="l22" x1="0.250" y1="0.067" x2="0.750" y2="0.933"><stop offset="0" stop-color="#eef2f6"/><stop offset="0.35" stop-color="#aab5c1"/><stop offset="1" stop-color="#4a5563"/></linearGradient></defs>
+<path d="M37 68 L46 68 L45 88 L37 88 Z" fill="none" stroke="#1a1622" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M37 68 L46 68 L45 88 L37 88 Z" fill="#3c4350"/>
+<path d="M25 81 L55 81 L55 93 C55 107 47 115 40 119.5 C33 115 25 107 25 93 Z" fill="none" stroke="#1a1622" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M25 81 L55 81 L55 93 C55 107 47 115 40 119.5 C33 115 25 107 25 93 Z" fill="url(#l20)"/>
+<path d="M28 84 L52 84 L52 93 C52 105 46 111 40 115 C34 111 28 105 28 93 Z" fill="none" stroke="#f0c45a" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M40 88 L44 97 L40 108 L36 97 Z" fill="url(#l21)" stroke="#1a1622" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M28 84 L40 84 L40 112 C34 109 28 103 28 93 Z" fill="#ffffff" opacity="0.12"/>
+<path d="M33 70 C32 61 38 58 44 59 C49 60 50 65 49 70 C45 72 37 73 33 70 Z" fill="none" stroke="#1a1622" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M33 70 C32 61 38 58 44 59 C49 60 50 65 49 70 C45 72 37 73 33 70 Z" fill="url(#l22)"/>
+<path d="M34 69.5 C39 71.5 44 71 48.5 69.5" fill="none" stroke="#e0a93a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M36 63 C38 61 41 60.5 43 61 C40 62.5 38 64.5 37 67 Z" fill="#fff" opacity="0.6"/>
+</svg>

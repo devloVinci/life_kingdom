@@ -6,8 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
+import '../../core/game/catalog.dart';
 import '../../core/game/models.dart';
+import '../../core/theme/ui_palette.dart';
+import '../../core/widgets/cosmetic_swatches.dart';
+import '../../core/world/season.dart';
 import '../../core/notifications/notification_providers.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/widgets/game_background.dart';
 import '../../core/widgets/game_button.dart';
@@ -122,7 +127,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Row(children: [
               IconButton(
                 tooltip: 'Back',
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
                 onPressed: () => context.pop(),
               ),
               Text('Settings', style: AppText.heading(26)),
@@ -222,6 +227,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ]),
             ),
             const SizedBox(height: 16),
+            GamePanel(
+              key: const Key('appearance_panel'),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Appearance', style: AppText.headingPlain(20)),
+                    Text('The interface theme and the world season are separate. Unlock more in the Shop.',
+                        style: AppText.body(12, color: AppColors.textMuted)),
+                    const SizedBox(height: 10),
+                    Text('INTERFACE', style: AppText.label(11)),
+                    const SizedBox(height: 6),
+                    _SwatchRow(
+                      ids: [for (final p in UiPalette.all) p.id],
+                      owned: s.owned,
+                      selected: ref.watch(uiPaletteProvider).id,
+                      preview: (id) => ThemeSwatch(id: id),
+                      onPick: controller.equip,
+                    ),
+                    const SizedBox(height: 12),
+                    Text('WORLD SEASON', style: AppText.label(11)),
+                    const SizedBox(height: 6),
+                    _SwatchRow(
+                      ids: [for (final p in SeasonPack.all) p.id],
+                      owned: s.owned,
+                      selected: ref.watch(seasonProvider).id,
+                      preview: (id) => SeasonSwatch(id: id),
+                      onPick: controller.equip,
+                    ),
+                  ]),
+            ),
+            const SizedBox(height: 16),
             Center(
               child: GameButton(
                 label: 'Reset progress',
@@ -292,4 +328,65 @@ class _ImportDialogState extends State<_ImportDialog> {
       ],
     );
   }
+}
+
+/// Row of small previews; locked ones are dimmed with a lock.
+class _SwatchRow extends StatelessWidget {
+  const _SwatchRow({
+    required this.ids,
+    required this.owned,
+    required this.selected,
+    required this.preview,
+    required this.onPick,
+  });
+
+  final List<String> ids;
+  final Set<String> owned;
+  final String selected;
+  final Widget Function(String id) preview;
+  final bool Function(String id) onPick;
+
+  @override
+  Widget build(BuildContext context) => Wrap(spacing: 10, runSpacing: 10, children: [
+        for (final id in ids)
+          Semantics(
+            button: true,
+            label: Catalog.byId[id]?.name ?? id,
+            selected: id == selected,
+            child: GestureDetector(
+              key: Key('pick_$id'),
+              onTap: owned.contains(id) ? () => onPick(id) : null,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 62,
+                  height: 62,
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                        color: id == selected ? AppColors.accent : Colors.transparent, width: 2),
+                  ),
+                  child: Opacity(
+                    opacity: owned.contains(id) ? 1 : 0.35,
+                    child: Stack(fit: StackFit.expand, children: [
+                      preview(id),
+                      if (!owned.contains(id))
+                        const Center(child: Icon(Icons.lock_rounded, color: Colors.white, size: 18)),
+                    ]),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SizedBox(
+                  width: 66,
+                  child: Text(Catalog.byId[id]?.name ?? id,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: AppText.body(10, color: AppColors.textMuted)),
+                ),
+              ]),
+            ),
+          ),
+      ]);
 }

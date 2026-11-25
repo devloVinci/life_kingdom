@@ -28,11 +28,11 @@ class QuestsScreen extends ConsumerWidget {
             ),
           ),
           TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: AppColors.gold,
+            labelColor: AppColors.onBackground,
+            unselectedLabelColor: AppColors.onBackground.withValues(alpha: 0.6),
+            indicatorColor: AppColors.accent,
             dividerColor: Colors.transparent,
-            labelStyle: AppText.body(14, color: Colors.white),
+            labelStyle: AppText.body(14, color: AppColors.onBackground),
             tabs: const [
               Tab(text: 'Daily'),
               Tab(text: 'Weekly'),
@@ -70,7 +70,7 @@ class _QuestList extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(hint, style: AppText.body(13, color: Colors.white)),
+        Text(hint, style: AppText.body(13, color: AppColors.onBackground)),
         const SizedBox(height: 8),
         for (final v in views)
           Padding(

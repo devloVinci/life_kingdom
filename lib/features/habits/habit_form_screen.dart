@@ -145,7 +145,7 @@ class _HabitFormScreenState extends ConsumerState<HabitFormScreen> {
             Row(children: [
               IconButton(
                 tooltip: 'Back',
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
                 onPressed: () => context.pop(),
               ),
               Text(editing ? 'Edit Habit' : 'New Habit',

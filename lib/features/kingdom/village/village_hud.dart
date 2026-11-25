@@ -41,9 +41,11 @@ class VillageHud extends ConsumerWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0xFF0A1B3D).withOpacity(.72),
-              const Color(0xFF0A1B3D).withOpacity(0),
+              const Color(0xFF080B12).withValues(alpha: .78),
+              const Color(0xFF080B12).withValues(alpha: .35),
+              const Color(0xFF080B12).withValues(alpha: 0),
             ],
+            stops: const [0, 0.6, 1],
           ),
         ),
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
@@ -67,13 +69,21 @@ class VillageHud extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 7, vertical: 1),
                         decoration: BoxDecoration(
-                          color: AppColors.gold,
+                          gradient: const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0xFFFFE08A), Color(0xFFE0A93A)],
+                          ),
                           borderRadius: BorderRadius.circular(10),
-                          border:
-                              Border.all(color: AppColors.outline, width: 2.5),
+                          border: Border.all(
+                              color: AppColors.palette.chunky
+                                  ? AppColors.outline
+                                  : const Color(0xFF2A1C04),
+                              width: AppColors.palette.chunky ? 2.5 : 1.2),
                         ),
                         child: Text('$level',
-                            style: AppText.headingPlain(14)),
+                            style: AppText.headingPlain(14,
+                                color: const Color(0xFF2A1C04))),
                       ),
                     ),
                   ]),
@@ -90,7 +100,7 @@ class VillageHud extends ConsumerWidget {
                         child: Text(s.playerName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: AppText.heading(20)),
+                            style: AppText.heading(20, color: Colors.white)),
                       ),
                       const SizedBox(width: 6),
                       RankBadge(
@@ -101,7 +111,8 @@ class VillageHud extends ConsumerWidget {
                     XpBar(current: cur, max: need),
                     const SizedBox(height: 2),
                     Text('Level $level  -  Rank ${rank.name}',
-                        style: AppText.body(11, color: Colors.white)),
+                        style: AppText.body(11,
+                            color: Colors.white.withValues(alpha: 0.85))),
                   ]),
             ),
             const SizedBox(width: 8),
@@ -115,7 +126,7 @@ class VillageHud extends ConsumerWidget {
           Row(children: [
             _Chip(
               key: const Key('streak_chip'),
-              color: AppColors.danger,
+              color: const Color(0xFFFF7A3D),
               icon: Icons.local_fire_department,
               text: '$streak day${streak == 1 ? '' : 's'}',
               onTap: () => context.push('/calendar'),
@@ -123,7 +134,7 @@ class VillageHud extends ConsumerWidget {
             const SizedBox(width: 8),
             _Chip(
               key: const Key('today_chip'),
-              color: allDone ? AppColors.success : AppColors.panelLight,
+              color: allDone ? AppColors.success : const Color(0xFF6FB7FF),
               icon: allDone ? Icons.emoji_events : Icons.check_circle,
               text: due == 0 ? 'No habits' : 'Today $done / $due',
               onTap: () => context.go('/habits'),
@@ -164,9 +175,15 @@ class _Chip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(6, 3, 10, 3),
           decoration: BoxDecoration(
-            color: AppColors.panelDeep,
+            color: AppColors.palette.chunky
+                ? AppColors.panelDeep
+                : Colors.black.withValues(alpha: 0.42),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.outline, width: 2.5),
+            border: Border.all(
+                color: AppColors.palette.chunky
+                    ? AppColors.outline
+                    : Colors.white.withValues(alpha: 0.12),
+                width: AppColors.palette.chunky ? 2.5 : 1),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             Icon(icon, color: color, size: 20),

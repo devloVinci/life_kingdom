@@ -1,0 +1,9 @@
+{
+  "name": "life-kingdom-art",
+  "private": true,
+  "description": "Generates the hero, dragon and building SVGs. Run: npm install && npm run build",
+  "scripts": {
+    "build": "mkdir -p out && node hero.js out && node dragon.js out && node buildings.js && node copy.js"
+  },
+  "dependencies": { "@resvg/resvg-js": "^2.6.2" }
+}

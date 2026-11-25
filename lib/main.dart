@@ -7,6 +7,7 @@ import 'core/data/game_repository.dart';
 import 'core/notifications/notification_providers.dart';
 import 'core/notifications/notification_service_stub.dart'
     if (dart.library.io) 'core/notifications/notification_service_mobile.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 
 Future<void> main() async {
@@ -32,10 +33,15 @@ class LifeKingdomApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(notificationSyncProvider);
+    final palette = ref.watch(uiPaletteProvider);
+    // Interface colours are read statically; switching the UI theme rebuilds
+    // the whole tree (the router keeps its location).
+    AppColors.palette = palette;
     return MaterialApp.router(
+      key: ValueKey(palette.id),
       title: 'Life Kingdom',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
+      theme: buildAppTheme(palette),
       routerConfig: ref.watch(_routerProvider),
     );
   }

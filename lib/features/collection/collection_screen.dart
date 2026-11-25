@@ -32,7 +32,7 @@ class CollectionScreen extends ConsumerWidget {
               if (showBack)
                 IconButton(
                   tooltip: 'Back',
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
                   onPressed: () => context.pop(),
                 )
               else
@@ -94,7 +94,7 @@ class _HeroTile extends StatelessWidget {
             border: Border.all(
                 color: equipped ? AppColors.gold : AppColors.outline,
                 width: equipped ? 4 : 3),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(color: AppColors.panelDark, offset: Offset(0, 4)),
             ],
           ),
@@ -110,9 +110,9 @@ class _HeroTile extends StatelessWidget {
                   ),
                 ),
                 if (!owned)
-                  const Icon(Icons.lock, color: AppColors.outline, size: 28),
+                  Icon(Icons.lock, color: AppColors.outline, size: 28),
                 if (companion)
-                  const Positioned(
+                  Positioned(
                     top: 0,
                     right: 0,
                     child: Icon(Icons.pets, color: AppColors.panelPrimary, size: 18),

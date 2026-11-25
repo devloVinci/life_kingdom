@@ -24,7 +24,7 @@ class BuildingsScreen extends ConsumerWidget {
             Row(children: [
               IconButton(
                 tooltip: 'Back',
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
                 onPressed: () => context.pop(),
               ),
               Text('Buildings', style: AppText.heading(26)),
@@ -93,7 +93,7 @@ class _BuildingTile extends ConsumerWidget {
                       style: AppText.body(12)),
                 ]),
           ),
-          const Icon(Icons.chevron_right, color: AppColors.panelPrimary),
+          Icon(Icons.chevron_right, color: AppColors.panelPrimary),
         ]),
       ),
     );

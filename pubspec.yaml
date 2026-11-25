@@ -40,3 +40,10 @@ flutter:
     - assets/characters/seraph/
     - assets/characters/sorcerer/
     - assets/characters/warlord/
+    - assets/characters/warden/
+    - assets/characters/dragon_ember/
+    - assets/characters/dragon_frost/
+    - assets/characters/dragon_verdant/
+    - assets/characters/dragon_shadow/
+    - assets/characters/dragon_gilded/
+    - assets/buildings/

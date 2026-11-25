@@ -77,7 +77,7 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen> {
           if (later.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text('Not scheduled today',
-                style: AppText.body(14, color: Colors.white)),
+                style: AppText.body(14, color: AppColors.onBackground)),
             const SizedBox(height: 8),
             for (final h in later) _HabitTile(habit: h, done: false, dim: true),
           ],
@@ -158,7 +158,7 @@ class _HabitTile extends ConsumerWidget {
             ),
             IconButton(
               tooltip: 'Edit',
-              icon: const Icon(Icons.edit, color: AppColors.panelPrimary),
+              icon: Icon(Icons.edit, color: AppColors.panelPrimary),
               onPressed: () => context.push('/habit/${habit.id}'),
             ),
           ]),

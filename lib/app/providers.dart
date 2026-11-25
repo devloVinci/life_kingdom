@@ -10,6 +10,8 @@ import '../core/game/game_engine.dart';
 import '../core/game/models.dart';
 import '../core/game/quest_engine.dart';
 import '../core/game/task_engine.dart';
+import '../core/theme/ui_palette.dart';
+import '../core/world/season.dart';
 
 /// Overridden in main() / tests.
 final gameRepositoryProvider =
@@ -22,6 +24,19 @@ final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
 final gameProvider =
     NotifierProvider<GameController, GameState>(GameController.new);
+
+/// Interface theme (independent of the world season).
+final uiPaletteProvider = Provider<UiPalette>((ref) => UiPalette.byId(
+    ref.watch(gameProvider.select((s) => s.equipped['uiTheme']))));
+
+/// World season pack.
+final seasonProvider = Provider<SeasonPack>((ref) => SeasonPack.byId(
+    ref.watch(gameProvider.select((s) => s.equipped['season']))));
+
+/// Equipped dragon skin id, e.g. `dragon_ember`.
+final dragonSkinProvider = Provider<String>((ref) =>
+    ref.watch(gameProvider.select((s) => s.equipped['dragonSkin'])) ??
+    'dragon_ember');
 
 class GameController extends Notifier<GameState> {
   @override

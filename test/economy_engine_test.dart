@@ -257,7 +257,8 @@ void main() {
       customRewards: [CustomReward(id: 'r', title: 'Treat', priceGold: 50)],
     );
     final r = GameState.fromJson(s.toJson());
-    expect(r.owned, s.owned);
+    // Starter cosmetics are merged in on load; nothing else changes.
+    expect(r.owned, {...s.owned, ...Catalog.starterIds});
     expect(r.equipped['character'], 'char_archer');
     expect(r.building('keep').upgradeTarget, 3);
     expect(r.building('keep').skippedDays, 1);

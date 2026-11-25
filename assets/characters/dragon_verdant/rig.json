@@ -1,0 +1,86 @@
+{
+ "name": "Dragon (verdant)",
+ "slug": "dragon_verdant",
+ "width": 180,
+ "height": 160,
+ "parts": [
+  {
+   "name": "Ground Shadow",
+   "file": "ground_shadow.svg",
+   "role": "shadow"
+  },
+  {
+   "name": "Wing Far",
+   "file": "wing_far.svg",
+   "role": "wingR"
+  },
+  {
+   "name": "Tail",
+   "file": "tail.svg",
+   "role": "tail"
+  },
+  {
+   "name": "Back Legs",
+   "file": "legs_back.svg",
+   "role": "legR"
+  },
+  {
+   "name": "Front Legs",
+   "file": "legs_front.svg",
+   "role": "legL"
+  },
+  {
+   "name": "Body",
+   "file": "body.svg",
+   "role": "body"
+  },
+  {
+   "name": "Head",
+   "file": "head.svg",
+   "role": "head"
+  },
+  {
+   "name": "Wing Near",
+   "file": "wing_near.svg",
+   "role": "wingL"
+  }
+ ],
+ "pivots": {
+  "shadow": [
+   92,
+   146
+  ],
+  "wingR": [
+   107,
+   88
+  ],
+  "tail": [
+   64,
+   108
+  ],
+  "legR": [
+   74,
+   112
+  ],
+  "legL": [
+   110,
+   112
+  ],
+  "body": [
+   92,
+   126
+  ],
+  "head": [
+   112,
+   94
+  ],
+  "wingL": [
+   94,
+   90
+  ],
+  "root": [
+   92,
+   142
+  ]
+ }
+}
