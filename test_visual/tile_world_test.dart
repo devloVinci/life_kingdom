@@ -45,7 +45,22 @@ Future<void> _settle(WidgetTester t) async {
   }
 }
 
-
+/// A save where the first [count] lands are already open (no reveal plays).
+GameState _grown(int count, {int completions = 0}) => GameState(
+      playerName: 'Khash',
+      totalXp: 2600,
+      gold: 1240,
+      gems: 18,
+      habits: const [Habit(id: 'h1', title: 'Read 20 pages')],
+      completions: [
+        for (var i = 0; i < completions; i++)
+          Completion(habitId: 'h1', dateKey: '2026-10-${(i % 28 + 1).toString().padLeft(2, '0')}', xp: 0, gold: 0),
+      ],
+      settings: {
+        for (final m in WorldGrowth.milestones.take(count))
+          '${WorldGrowth.seenPrefix}${m.id}': true,
+      },
+    );
 
 void main() {
   setUpAll(() async {
