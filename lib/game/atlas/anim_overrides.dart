@@ -8,21 +8,20 @@ import 'character_anims.dart';
 import 'sprite_atlas.dart';
 
 /// The few characters used in the app and their animation slots. Names
-/// come from the pack's character_animations.json.
+/// come from the pack's index.json (via assets/openworld/characters.json).
 class CharacterSlots {
   CharacterSlots._();
 
   /// slot -> (character, default animation, label, still frame)
   static const slots = <String, (String, String, String, bool)>{
     'knight.idle': ('knight', 'idle', 'الفارس · وقوف', false),
-    // The knight sheet has no walk: he marches with his idle loop.
-    'knight.walk': ('knight', 'idle', 'الفارس · مسير', false),
-    // barbarian_v2 has no idle: first frame of its walk stands still.
-    'barbarian.idle': ('barbarian_v2', 'walk', 'المحارب · وقوف', true),
+    'knight.walk': ('knight', 'walk', 'الفارس · مشي', false),
+    // barbarian_v2 idles only front and back; combat_idle has all four sides.
+    'barbarian.idle': ('barbarian_v2', 'combat_idle', 'المحارب · وقوف', false),
     'barbarian.walk': ('barbarian_v2', 'walk', 'المحارب · مشي', false),
     'archer.idle': ('archer', 'idle', 'الرامية · وقوف', false),
     'archer.walk': ('archer', 'walk', 'الرامية · مشي', false),
-    'builder.work': ('builder', 'build', 'البنّاء · عمل', false),
+    'builder.work': ('builder', 'building', 'البنّاء · عمل', false),
     'builder.idle': ('builder', 'idle', 'البنّاء · وقوف', false),
     'goblin.idle': ('goblin', 'idle', 'الغول · وقوف', false),
   };

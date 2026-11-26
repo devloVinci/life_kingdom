@@ -5,8 +5,9 @@ import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// One frame of a TexturePacker "JSON hash" atlas from the
-/// ClashOpenWorld pack (pivot is a fraction of the source size).
+/// One frame of a TexturePacker-style "JSON hash" atlas written by
+/// tools/openworld/import_pack.py from the `ready_use_word` pack (pivot is a
+/// fraction of the source size).
 class AtlasFrame {
   const AtlasFrame({
     required this.src,
@@ -52,8 +53,15 @@ class AtlasFrame {
       sourceSize.height * scale);
 }
 
+/// Frame names by group or animation; what the catalog needs, so it can be
+/// tested without an image.
+abstract interface class FrameNames {
+  List<String> group(String name);
+  List<String> anim(String name);
+}
+
 /// Parsed atlas data without the image (testable without Flutter's engine).
-class AtlasData {
+class AtlasData implements FrameNames {
   AtlasData(this.frames, this.animations);
 
   final Map<String, AtlasFrame> frames;
@@ -75,17 +83,26 @@ class AtlasData {
     return AtlasData(frames, anims);
   }
 
-  /// Frames of a group in reading order (`<group>_r1_f1` ... `_r4_f4`).
+  @override
+  List<String> anim(String name) => animations[name] ?? const [];
+
+  static final _suffix = RegExp(r'^(_row|_anim|_r)?\d+$');
+
+  /// Frames of a group in reading order: every animation named
+  /// `<name>_row0`, `<name>_anim1`, `<name>_r2` or `<name>3`, in file order.
+  @override
   List<String> group(String name) {
     final out = <String>[];
-    for (var r = 1; r <= 4; r++) {
-      out.addAll(animations['${name}_r$r'] ?? const []);
-    }
+    animations.forEach((key, frames) {
+      if (key.startsWith(name) && _suffix.hasMatch(key.substring(name.length))) {
+        out.addAll(frames);
+      }
+    });
     return out;
   }
 }
 
-class SpriteAtlas {
+class SpriteAtlas implements FrameNames {
   SpriteAtlas(this.id, this.image, this.data);
 
   final String id;
@@ -93,7 +110,9 @@ class SpriteAtlas {
   final AtlasData data;
 
   AtlasFrame? frame(String name) => data.frames[name];
-  List<String> anim(String name) => data.animations[name] ?? const [];
+  @override
+  List<String> anim(String name) => data.anim(name);
+  @override
   List<String> group(String name) => data.group(name);
 
   /// Frame of a looping animation at time [t] seconds.
@@ -130,7 +149,7 @@ class SpriteAtlas {
 }
 
 /// Loads `assets/openworld/<id>.json` + `.png`. Null when the pack has not
-/// been imported (see tools/openworld/import_pack.ps1), so screens can fall
+/// been imported (see tools/openworld/import_pack.py), so screens can fall
 /// back to placeholders instead of crashing.
 Future<SpriteAtlas?> loadAtlas(String id, {AssetBundle? bundle}) async {
   final b = bundle ?? rootBundle;
@@ -145,13 +164,13 @@ Future<SpriteAtlas?> loadAtlas(String id, {AssetBundle? bundle}) async {
   }
 }
 
-/// Atlases used by the open-world screens.
+/// Atlases used by the open-world screens (ids from the pack's index.json).
 class Atlases {
   Atlases._();
 
   static const kingdom = [
-    'grass_dirt_mud',
-    'storages_townhall_builder',
+    'terrain_grass_dirt_mud',
+    'town_hall_idle_upgrade',
     'resource_extractors',
     'record_tower',
     'builder',
@@ -159,67 +178,83 @@ class Atlases {
     'goblin',
     'daily_chest',
     'flora_rocks_resources',
-    'walls_corners',
-    'ui_elements_a',
-    'army_barracks_spells_lab',
-    'barbarian_v2_idle_move',
-    'archer_actions',
+    'walls',
+    'ui_elements',
+    'military_buildings',
+    'barbarian_v2',
+    'archer',
   ];
   static const world = [
-    'grass_dirt_mud',
-    'snow_ice_shadow',
-    'volcanic_lava_transitions',
+    'terrain_grass_dirt_mud',
+    'terrain_snow_ice_shadow',
+    'terrain_volcanic_lava',
     'flora_rocks_resources',
-    'landmarks_pois',
-    'storages_townhall_builder',
+    'world_landmarks',
+    'town_hall_idle_upgrade',
     'knight',
     'battlefield_scars',
-    'barbarian_v2_idle_move',
-    'archer_actions',
+    'barbarian_v2',
+    'archer',
   ];
 
   /// Everything the import script copies (also listed in the gallery).
   static const all = [
-    'grass_dirt_mud',
-    'paths_water_cliffs',
-    'roads_bridges_crossings',
-    'snow_ice_shadow',
-    'volcanic_lava_transitions',
-    'walls_corners',
-    'gates_gatehouses_damage',
+    'knight',
+    'barbarian_v2',
+    'archer',
+    'builder',
+    'goblin',
+    'hero_warlord_commander',
+    'berserker',
+    'heavy_knight',
+    'lancer',
+    'wizard',
+    'cleric',
+    'giant',
+    'pekka',
+    'dragon',
+    'scout_reporter',
+    'royal_monthly_herald',
+    'wandering_merchant_walk',
+    'wandering_merchant_actions',
+    'wandering_merchant_trading',
+    'forest_guardian',
+    'frost_lord',
+    'town_hall_idle_upgrade',
+    'town_hall_damage',
     'storages_townhall_builder',
     'resource_extractors',
-    'army_barracks_spells_lab',
-    'clan_castle_siege_props',
-    'record_tower',
     'builder_hut_idle_repair',
+    'military_buildings',
     'army_camp_idle_fire',
-    'defensive_towers',
-    'builder',
-    'knight',
-    'goblin',
-    'scout_reporter',
-    'royal_herald_mounted',
-    'barbarian_v2_idle_move',
-    'barbarian_v2_combat',
-    'archer_actions',
-    'dragon',
-    'merchant_movement',
-    'merchant_actions',
-    'merchant_stall',
-    'forest_guardian_frost_lord',
+    'record_tower',
     'daily_chest',
+    'merchant_stall',
+    'walls',
+    'gates_and_wall_damage',
+    'defensive_towers',
+    'terrain_grass_dirt_mud',
+    'terrain_paths_water_cliffs',
+    'terrain_snow_ice_shadow',
+    'terrain_volcanic_lava',
+    'roads_bridges',
     'flora_rocks_resources',
-    'landmarks_pois',
+    'world_landmarks',
     'battlefield_scars',
-    'spells_flashes_explosions',
-    'command_movement_buff_fx',
-    'ui_elements_a',
-    'ui_elements_b',
-    'atlas_A_royal_archive',
-    'atlas_B_scout_reports',
-    'atlas_C_quest_board',
-    'atlas_D_challenge_buttons',
+    'battering_ram',
+    'catapult',
+    'ballista',
+    'siege_tower',
+    'mobile_cannon',
+    'spells_explosions_vfx',
+    'arrows_impact_fx',
+    'command_fx',
+    'hud_icons',
+    'ui_elements',
+    'ui_letters_maps',
+    'ui_books_stationery',
+    'ui_cards_badges',
+    'ui_name_plates',
   ];
 }
 

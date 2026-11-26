@@ -1,98 +1,102 @@
 import 'sprite_atlas.dart';
 
 /// Semantic names for pack frames, so screens never hard-code file names.
-/// Directions of the 8 generic unit groups (set01..set08) are not labelled
-/// in the pack; the values below are first guesses to check in the
-/// in-app asset gallery (Diwan -> asset gallery) and adjust here.
+/// Group names are the row names of the pack's `index.json` (the pack JSON
+/// describes each row, e.g. `gold_mine_wood_row0..3`). Rows whose meaning
+/// is a guess are marked; check them in the asset gallery (Diwan ->
+/// asset gallery) and adjust here.
 class Catalog {
   Catalog._();
 
   // ---- Buildings ----
 
-  static const townHallGroups = [
-    'townhall_wood',
-    'townhall_stone',
-    'townhall_dark_fire',
-  ];
+  /// Style blocks of `town_hall_idle_upgrade` in build order: plain house,
+  /// then scaffold and stone stages, then the gilded one. Block 1 (lit
+  /// windows) is an ambient variant and is skipped. (order is a first guess)
+  static const townHallBlocks = [0, 2, 3, 4, 5, 6, 7];
 
-  /// Town hall frame for a stage 0..44 (16 wood, 16 stone, 13 dark).
-  static String? townHall(SpriteAtlas a, int stage) {
-    var s = stage;
-    for (final g in townHallGroups) {
-      final frames = a.group(g);
-      final usable = g == 'townhall_dark_fire' ? 13 : frames.length;
-      if (s < usable && s < frames.length) return frames[s];
-      s -= usable;
-    }
-    final last = a.group(townHallGroups.last);
-    return last.isEmpty ? null : last[12.clamp(0, last.length - 1)];
+  /// Town hall frame for a stage 0..44, spread over the build-up frames.
+  static String? townHall(FrameNames a, int stage) {
+    final frames = <String>[
+      for (final b in townHallBlocks) ...a.group('town_hall_style$b'),
+    ];
+    if (frames.isEmpty) return null;
+    final i = (stage.clamp(0, 44) * (frames.length - 1) / 44).round();
+    return frames[i];
   }
 
   static const goldMineGroups = [
-    'gold_mine_t1_wood',
-    'gold_mine_t2_stone',
-    'gold_mine_t3_gilded',
-    'gold_mine_t4_royal',
+    'gold_mine_wood',
+    'gold_mine_stone',
+    'gold_mine_reinforced',
+    'gold_mine_golden',
   ];
 
   /// Gold mine frame for a stage 0..63.
-  static String? goldMine(SpriteAtlas a, int stage) {
+  static String? goldMine(FrameNames a, int stage) {
     final g = a.group(goldMineGroups[(stage ~/ 16).clamp(0, 3)]);
     if (g.isEmpty) return null;
     return g[(stage % 16).clamp(0, g.length - 1)];
   }
 
-  static String? recordTower(SpriteAtlas a, int level) {
-    final l = a.anim('tower_levels');
+  /// Record tower for level 1..8 (the pack draws exactly eight).
+  static String? recordTower(FrameNames a, int level) {
+    final l = a.anim('levels');
     if (l.isEmpty) return null;
     return l[(level - 1).clamp(0, l.length - 1)];
   }
 
-  static String? recordFx(SpriteAtlas a, int i) {
-    final l = a.anim('record_markers_fx');
+  static String? recordFx(FrameNames a, int i) {
+    final l = a.anim('star_sparkle');
     return l.isEmpty ? null : l[i % l.length];
   }
 
-  static String? dailyChest(SpriteAtlas a, int frame) {
-    final l = a.anim('daily_chest_fill_and_ready');
+  static String? recordBanner(FrameNames a, int i) {
+    final l = a.anim('banner_wave');
+    return l.isEmpty ? null : l[i % l.length];
+  }
+
+  /// Daily chest: 0 empty ... 6 overflowing, 7 glowing (ready to claim).
+  static String? dailyChest(FrameNames a, int frame) {
+    final l = a.anim('fill_stages');
     return l.isEmpty ? null : l[frame.clamp(0, l.length - 1)];
   }
 
   /// Wall look by fortifications held: palisade, stone, gold trim.
-  static const wallGroups = ['wood_palisade', 'stone_wall', 'gold_trim_wall'];
-
-  // ---- Units (animation names) ----
-
-  static const knightIdle = 'knight_set01_r1';
-  static const knightWalk = 'knight_set02_r3';
-  static const builderWork = 'building_r1';
-  static const builderIdle = 'idle_r1';
-  static const builderWalk = 'walk_r3';
-  static const goblinIdle = 'goblin_idle_r1';
-  static const goblinDash = 'goblin_loot_dash_r3';
+  static const wallGroups = [
+    'palisade_pieces',
+    'stone_wall_pieces',
+    'gold_wall_pieces',
+  ];
 
   // ---- Ground / nature ----
 
-  static const grassGroups = ['grass_plain', 'grass_lush'];
-  static const snowGroup = 'snow';
-  static const volcanicGroup = 'volcanic_rock';
-  static const shadowGroup = 'dark_cracked_ground';
+  /// Terrain tile rows: tileset0 is plain grass, tileset1 tufted grass.
+  static const grassGroups = ['tileset0_variants', 'tileset1_variants'];
+
+  /// Snow and shadow come from `terrain_snow_ice_shadow`, lava from
+  /// `terrain_volcanic_lava` (row choices are first guesses).
+  static const snowGroup = 'tileset0_variants';
+  static const volcanicGroup = 'tileset0_variants';
+  static const shadowGroup = 'tileset4_variants';
   static const treeGroups = ['trees_deciduous', 'trees_pine'];
   static const rockGroup = 'rocks';
   static const bushGroup = 'bushes_plants';
+
+  /// Indexed by `Landmark.group` in the army engine.
   static const landmarkGroups = [
     'watchtowers_signal',
     'ancient_ruins',
-    'rest_control_camps',
+    'rest_camps',
     'mining_sites',
     'abandoned_ruins_tombs',
-    'stone_quarries',
+    'open_quarries',
   ];
 
   // ---- UI ----
 
-  static String? coinIcon(SpriteAtlas a) {
-    final g = a.group('resources_potions');
+  static String? coinIcon(FrameNames a) {
+    final g = a.group('resource_icons');
     return g.isEmpty ? null : g.first;
   }
 }

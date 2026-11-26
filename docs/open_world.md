@@ -9,11 +9,19 @@ A task is a task whatever its topic; only its difficulty matters.
 
 ## Setup (once per machine)
 ```
-powershell -ExecutionPolicy Bypass -File tools/openworld/import_pack.ps1
+pip install pillow
+python tools/openworld/import_pack.py "%USERPROFILE%\Downloads\ready_use_word"
 flutter run -d chrome
 ```
-The ClashOpenWorld pack is git-ignored (public repo). Without it the app
-runs with placeholders.
+The `ready_use_word` pack (v3) is git-ignored (public repo). Without it the
+app runs with placeholders. The script copies only the sheets the app uses
+(`--all` for everything), writes TexturePacker-style JSON next to each,
+builds `characters.json`, and:
+- shrinks big art once to a fixed height (herald 112, chest 80, record
+  tower 150, merchant 80, UI 48-96) so nothing is resampled at run time;
+- cuts terrain tiles to 64x64 (removes the 1px grid line of the cells).
+`--fixture` writes names-only metadata to `test/fixtures/` (committed) so CI
+can check the catalog against the real pack without the art.
 
 ## What v0.1 has
 - Arabic RTL app, 4 tabs: Kingdom, World, Tasks, Diwan (+ old settings,
@@ -53,21 +61,25 @@ runs with placeholders.
   character uses; saved on the device (`ow_anim_overrides`).
 
 ## Character animations
-The pack's `character_animations.json` (copied as
-`assets/openworld/characters.json`) is the source of truth:
-`characters -> <char> -> animations -> <anim> -> directions -> <dir>`,
-with `mirror_of` + `flip_x` for undrawn sides. `CharacterLibrary`
-(`lib/game/atlas/character_anims.dart`) resolves it; slots in
-`anim_overrides.dart` pick a named animation per use (knight idle,
-warrior walk, ...). The knight sheet has no walk, so he marches with idle;
-`barbarian_v2` has no idle, so its walk's first frame stands still.
+`assets/openworld/characters.json` is built from the pack's `index.json`:
+`characters -> <char> -> animations -> <anim> -> directions -> <dir>`.
+`CharacterLibrary` (`lib/game/atlas/character_anims.dart`) resolves a
+direction: exact, then alternate takes (`down_alt`, `right_b`), then the
+other side flipped, then `side` (drawn facing right). Slots in
+`anim_overrides.dart` pick a named animation per use. The knight now has
+a walk on all four sides; `barbarian_v2` idles only front/back, so its slot
+uses `combat_idle`; goblin and builder profile art faces right (flipped for
+left).
 
 ## Numbers
 All in `WorldConfig` (`lib/core/game/world_engine.dart`).
 
 ## Asset names
-`lib/game/atlas/catalog.dart`. Unit direction groups (set01..08) are
-first guesses: check them in Diwan -> asset gallery and fix there.
+`lib/game/atlas/catalog.dart` uses the pack's row names (e.g.
+`gold_mine_wood_row0..3`). Which tileset row is snow or shadow, and the
+build order of the town hall blocks, are first guesses: check them in
+Diwan -> asset gallery. `test/pack_catalog_test.dart` fails if a name does
+not exist in the pack.
 
 ## Not yet
 Bosses, freed villages, decree, merchant,

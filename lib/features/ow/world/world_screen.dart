@@ -284,13 +284,13 @@ class WorldPainter extends CustomPainter {
   final Set<String> captured;
 
   static const _groundAtlas = [
-    'grass_dirt_mud',
-    'snow_ice_shadow',
-    'volcanic_lava_transitions',
-    'snow_ice_shadow',
+    'terrain_grass_dirt_mud',
+    'terrain_snow_ice_shadow',
+    'terrain_volcanic_lava',
+    'terrain_snow_ice_shadow',
   ];
   static const _groundGroup = [
-    'grass_plain',
+    'tileset0_variants',
     Catalog.snowGroup,
     Catalog.volcanicGroup,
     Catalog.shadowGroup,
@@ -361,7 +361,7 @@ class WorldPainter extends CustomPainter {
       }
     }
 
-    final l = a['landmarks_pois'];
+    final l = a['world_landmarks'];
     final scars = a['battlefield_scars'];
     for (final lm in ArmyEngine.landmarks) {
       if (!ArmyEngine.revealed(lm, level)) continue;
@@ -395,7 +395,7 @@ class WorldPainter extends CustomPainter {
     drawables.add((
       c.dy,
       () {
-        final th = a['storages_townhall_builder'];
+        final th = a['town_hall_idle_upgrade'];
         final thFrame = th == null ? null : Catalog.townHall(th, townHallStage);
         if (th != null && thFrame != null) {
           th.draw(canvas, thFrame, c, scale: 2.0);

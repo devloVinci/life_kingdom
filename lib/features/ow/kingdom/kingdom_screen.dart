@@ -213,7 +213,7 @@ class _MissingAssets extends StatelessWidget {
   Widget build(BuildContext context) => OwPanel(
         accent: Ow.danger,
         child: Text(
-          'لم تُستورد صور الحزمة بعد. شغّل tools/openworld/import_pack.ps1 '
+          'لم تُستورد صور الحزمة بعد. شغّل tools/openworld/import_pack.py '
           'ثم أعد تشغيل التطبيق.',
           style: Ow.body(13),
         ),
@@ -258,11 +258,11 @@ class KingdomPainter extends CustomPainter {
           _builder, 1.7, 'builder')),
       (_knight.dy, () =>
           _unit(canvas, 'knight.idle', 'down', _knight, 1.9, 'knight')),
-      (_barracks.dy, () => _building(canvas, 'army_barracks_spells_lab',
+      (_barracks.dy, () => _building(canvas, 'military_buildings',
           'barracks_wood', (v.level ~/ 6).clamp(0, 15), _barracks, 2.0,
           'barracks', 'الثكنة')),
-      (_camp.dy - 30, () => _building(canvas, 'army_barracks_spells_lab',
-          'army_camp_tents',
+      (_camp.dy - 30, () => _building(canvas, 'military_buildings',
+          'army_camp',
           ((v.barbarians + v.archers) ~/ 3).clamp(0, 15), _camp, 1.6,
           'camp', 'المعسكر')),
       for (final u in _soldiers()) (u.$2.dy, () => _soldier(canvas, u)),
@@ -283,7 +283,7 @@ class KingdomPainter extends CustomPainter {
   }
 
   void _ground(Canvas canvas, Size size) {
-    final g = a['grass_dirt_mud'];
+    final g = a['terrain_grass_dirt_mud'];
     if (g == null) {
       canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFF4E8B3A));
       return;
@@ -331,7 +331,7 @@ class KingdomPainter extends CustomPainter {
   }
 
   void _townHall(Canvas canvas) {
-    final b = a['storages_townhall_builder'];
+    final b = a['town_hall_idle_upgrade'];
     final f = b == null ? null : Catalog.townHall(b, v.townHallStage);
     if (b == null || f == null) {
       _placeholder(canvas, _th, const Size(150, 150), 'القاعة', 'townhall');
@@ -360,7 +360,7 @@ class KingdomPainter extends CustomPainter {
       return;
     }
     final r = b.draw(canvas, f, _tower,
-        scale: 0.26, opacity: v.towerLevel == 0 ? 0.35 : 1);
+        scale: 1.2, opacity: v.towerLevel == 0 ? 0.35 : 1);
     if (r != null) hits['tower'] = r;
   }
 
@@ -372,7 +372,7 @@ class KingdomPainter extends CustomPainter {
       return;
     }
     final bob = v.chestReady ? sin(t * 4).abs() * -6 : 0.0;
-    final r = b.draw(canvas, f, _chest + Offset(0, bob), scale: 0.34);
+    final r = b.draw(canvas, f, _chest + Offset(0, bob), scale: 1.4);
     if (r != null) hits['chest'] = r;
   }
 
@@ -443,7 +443,7 @@ class KingdomPainter extends CustomPainter {
 
   void _walls(Canvas canvas) {
     if (v.fortifications <= 0) return;
-    final w = a['walls_corners'];
+    final w = a['walls'];
     if (w == null) return;
     final g = w.group(Catalog.wallGroups[(v.fortifications - 1).clamp(0, 2)]);
     if (g.isEmpty) return;
@@ -455,7 +455,7 @@ class KingdomPainter extends CustomPainter {
 
   void _harvestBubble(Canvas canvas) {
     if (v.harvest <= 0) return;
-    final ui = a['ui_elements_a'];
+    final ui = a['ui_elements'];
     final at = _mine + Offset(0, -170 + sin(t * 3) * 6);
     canvas.drawCircle(at, 30, Paint()..color = Colors.white.withValues(alpha: 0.85));
     canvas.drawCircle(

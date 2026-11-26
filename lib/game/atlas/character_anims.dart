@@ -6,8 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'sprite_atlas.dart';
 
-/// One playable direction of a named animation, resolved from the pack's
-/// `character_animations.json` (imported as assets/openworld/characters.json).
+/// One playable direction of a named animation, resolved from
+/// assets/openworld/characters.json (written by tools/openworld/import_pack.py
+/// from the pack's index.json).
 class AnimRef {
   const AnimRef({
     required this.atlasId,
@@ -17,10 +18,10 @@ class AnimRef {
     this.flipX = false,
   });
 
-  /// Atlas id as imported (`knight`, `barbarian_v2_idle_move`, ...).
+  /// Atlas id as imported (`knight`, `barbarian_v2`, ...).
   final String atlasId;
 
-  /// Animation key inside that atlas (`knight_set01_r1`).
+  /// Animation key inside that atlas (`walk_left`).
   final String key;
   final double fps;
   final bool loop;
@@ -105,13 +106,26 @@ class CharacterLibrary {
           flipX: flip);
     }
 
-    final exact = build(direction);
+    // A direction, or an alternate take of it (`down_alt`, `right_b`...).
+    AnimRef? pick(String d, {bool flip = false}) {
+      final exact = build(d, flip: flip);
+      if (exact != null) return exact;
+      for (final k in dirs.keys) {
+        if (k.startsWith('${d}_')) {
+          final r = build(k, flip: flip);
+          if (r != null) return r;
+        }
+      }
+      return null;
+    }
+
+    final exact = pick(direction);
     if (exact != null) return exact;
-    // A missing side can be the other side flipped.
-    const opposite = {'left': 'right', 'right': 'left'};
-    final o = opposite[direction];
-    if (o != null) {
-      final r = build(o, flip: true);
+    if (direction == 'left' || direction == 'right') {
+      // A missing side is the other side flipped; profile art that is only
+      // named `side` faces right.
+      final other = direction == 'left' ? 'right' : 'left';
+      final r = pick(other, flip: true) ?? pick('side', flip: direction == 'left');
       if (r != null) return r;
     }
     for (final d in ['down', 'right', 'left', 'up', ...dirs.keys]) {
@@ -121,7 +135,7 @@ class CharacterLibrary {
     return null;
   }
 
-  /// `06_Units/knight_hero/knight/knight_atlas.json` -> `knight`.
+  /// `knight.json` (or an older `knight_atlas.json` path) -> `knight`.
   static String atlasIdFromPath(String path) {
     final file = path.split('/').last;
     return file.endsWith('_atlas.json')
