@@ -169,39 +169,6 @@ class _FramePainter extends CustomPainter {
   bool shouldRepaint(_FramePainter old) => old.frame != frame || old.a != a;
 }
 
-/// One atlas frame scaled to fit its box.
-class FrameView extends StatelessWidget {
-  const FrameView(this.atlas, this.frame, {super.key});
-  final SpriteAtlas atlas;
-  final String frame;
-
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(painter: _FramePainter(atlas, frame));
-}
-
-class _FramePainter extends CustomPainter {
-  _FramePainter(this.a, this.frame);
-  final SpriteAtlas a;
-  final String frame;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final f = a.frame(frame);
-    if (f == null) return;
-    final s = (size.width / f.sourceSize.width)
-        .clamp(0.0, size.height / f.sourceSize.height);
-    final at = Offset(
-        size.width / 2 + (f.pivot.dx - 0.5) * f.sourceSize.width * s,
-        size.height / 2 + (f.pivot.dy - 0.5) * f.sourceSize.height * s);
-    a.draw(canvas, frame, at, scale: s);
-  }
-
-  @override
-  bool shouldRepaint(_FramePainter old) => old.frame != frame || old.a != a;
-}
-
-
 class _SeamPainter extends CustomPainter {
   _SeamPainter(this.a, this.frames, this.cell);
   final SpriteAtlas a;
@@ -221,3 +188,4 @@ class _SeamPainter extends CustomPainter {
   @override
   bool shouldRepaint(_SeamPainter old) => old.frames != frames || old.a != a;
 }
+
